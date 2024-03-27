@@ -19,7 +19,7 @@ class DPRTrainer:
             min_training_loss = 1e5
         else:
             min_training_loss = -1.0
-        for epoch in (1, num_epochs + 1):
+        for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             model.train()
             training_losses = []
@@ -56,7 +56,7 @@ class BayesianDPRTrainer:
             min_training_loss = 1e5
         else:
             min_training_loss = -1.0
-        for epoch in (1, num_epochs + 1):
+        for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             model.train()
             training_losses_ce = []

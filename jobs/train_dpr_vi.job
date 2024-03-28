@@ -1,0 +1,23 @@
+#!/bin/sh
+#SBATCH -o ./output/logs/%A.out
+#SBATCH -e ./output/logs/%A.err
+#SBATCH --partition=gpu
+#SBATCH --gpus-per-node=1
+#SBATCH --time=72:00:00
+# Set-up the environment.
+source ${HOME}/.bashrc
+# Activate env.
+conda activate bret
+
+CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
+    --training_data_file data/msmarco-train.jsonl \
+    --model_name google-bert/bert-base-uncased \
+    --method vi \
+    --tokenizer_cache_dir cache/tokenizer \
+    --num_train_qry 8 \
+    --num_train_psg 8 \
+    --num_epochs 8 \
+    --lr 0.00005 \
+    --max_qry_len 32 \
+    --max_psg_len 256 \
+    --output_dir output

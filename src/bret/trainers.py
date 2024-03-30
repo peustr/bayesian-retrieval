@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 class DPRTrainer:
     @staticmethod
-    def train(model, training_data, device, lr=5e-5, num_epochs=4, ckpt_file_name=None):
+    def train(model, training_data, device, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
         optimizer = Adam(model.parameters(), lr=lr)
-        scheduler = ExponentialLR(optimizer, gamma=0.5)
+        scheduler = ExponentialLR(optimizer, gamma=gamma)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
         else:
@@ -49,9 +49,9 @@ class DPRTrainer:
 
 class BayesianDPRTrainer:
     @staticmethod
-    def train(model, training_data, device, lr=5e-5, num_epochs=4, ckpt_file_name=None):
+    def train(model, training_data, device, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
         optimizer = Adam(model.parameters(), lr=lr)
-        scheduler = ExponentialLR(optimizer, gamma=0.5)
+        scheduler = ExponentialLR(optimizer, gamma=gamma)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
         else:

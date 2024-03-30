@@ -3,10 +3,10 @@ import logging
 
 import torch
 
-from bret import BERTRetriever, BayesianBERTRetriever
+from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_data_loader
 from bret.file_utils import get_checkpoint_file_name, get_tokenizer_cache_file_name
-from bret.trainers import DPRTrainer, BayesianDPRTrainer
+from bret.trainers import BayesianDPRTrainer, DPRTrainer
 
 logger = logging.getLogger(__name__)
 

@@ -75,7 +75,7 @@ class BayesianDPRTrainer:
                 loss = loss_ce + loss_kld
                 loss.backward()
                 optimizer.step()
-                training_losses_ce.append(loss.item())
+                training_losses_ce.append(loss_ce.item())
                 training_losses_kld.append(loss_kld.item())
             scheduler.step()
             avg_training_loss_ce = np.mean(training_losses_ce)

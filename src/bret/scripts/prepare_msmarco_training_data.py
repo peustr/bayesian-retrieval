@@ -9,9 +9,9 @@ from bret.data_loaders import GenericDataLoader
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--msmarco_dir", type=str, default="data/msmarco")
-    parser.add_argument("--negatives_file", type=str, default="data/msmarco-hard-negatives.jsonl.gz")
-    parser.add_argument("--output_file", type=str, default="data/msmarco-train.jsonl")
+    parser.add_argument("--msmarco_dir", default="data/msmarco")
+    parser.add_argument("--negatives_file", default="data/msmarco-hard-negatives.jsonl.gz")
+    parser.add_argument("--output_file", default="data/msmarco-train.jsonl")
     args = parser.parse_args()
     corpus, queries, qrels = GenericDataLoader(args.msmarco_dir, split="train").load()
     train_queries = {}

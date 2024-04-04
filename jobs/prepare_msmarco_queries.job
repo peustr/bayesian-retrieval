@@ -1,0 +1,17 @@
+#!/bin/sh
+#SBATCH -o ./output/logs/%A.out
+#SBATCH -e ./output/logs/%A.err
+#SBATCH --partition=cpu
+#SBATCH --time=2:00:00
+# Set-up the environment.
+source ${HOME}/.bashrc
+# Activate env.
+conda activate bret
+
+python src/bret/scripts/prepare_msmarco_queries.py \
+    --split dev \
+    --output_file data/msmarco-dev.jsonl
+
+python src/bret/scripts/prepare_msmarco_queries.py \
+    --split test \
+    --output_file data/msmarco-test.jsonl

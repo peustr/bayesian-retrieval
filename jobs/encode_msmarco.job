@@ -9,14 +9,12 @@ source ${HOME}/.bashrc
 # Activate env.
 conda activate bret
 
-CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
-    --training_data_file data/msmarco-train.jsonl \
+CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_msmarco.py \
+    --query_file data/msmarco-dev.jsonl \
+    --corpus_file data/msmarco-corpus.jsonl \
     --model_name google-bert/bert-base-uncased \
+    --encoder_ckpt output/trained_encoders/bert-base-uncased.pt \
     --tokenizer_cache_dir cache/tokenizer \
-    --num_train_qry 8 \
-    --num_train_psg 8 \
-    --num_epochs 4 \
-    --lr 0.00005 \
     --max_qry_len 32 \
     --max_psg_len 256 \
-    --output_dir output/trained_encoders
+    --output_dir output/embeddings

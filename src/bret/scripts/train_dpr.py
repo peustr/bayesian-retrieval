@@ -4,7 +4,7 @@ import logging
 import torch
 
 from bret import BayesianBERTRetriever, BERTRetriever
-from bret.data_loaders import make_data_loader
+from bret.data_loaders import make_training_data_loader
 from bret.file_utils import get_checkpoint_file_name, get_tokenizer_cache_file_name
 from bret.trainers import BayesianDPRTrainer, DPRTrainer
 
@@ -27,7 +27,7 @@ def main():
     parser.add_argument("--gamma", type=float, default=0.5)
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
-    parser.add_argument("--output_dir", default="output/")
+    parser.add_argument("--output_dir", default="output/trained_encoders")
     args = parser.parse_args()
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -38,15 +38,16 @@ def main():
     else:
         logger.info("Training a BERT retriever for DPR on MS-MARCO.")
         tokenizer, model = BERTRetriever.build(args.model_name, device=device)
-    train_dl = make_data_loader(
+    train_dl = make_training_data_loader(
         tokenizer,
         args.training_data_file,
         max_qry_len=args.max_qry_len,
         max_psg_len=args.max_psg_len,
         num_train_qry=args.num_train_qry,
         num_train_psg=args.num_train_psg,
-        split="train",
-        tokenizer_cache_file_name=get_tokenizer_cache_file_name(args.tokenizer_cache_dir, args.model_name),
+        tokenizer_cache_file_name=get_tokenizer_cache_file_name(
+            args.tokenizer_cache_dir, args.model_name, args.training_data_file
+        ),
     )
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
     if args.method == "vi":

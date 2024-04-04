@@ -1,5 +1,4 @@
 import argparse
-import gzip
 import json
 
 from tqdm.autonotebook import tqdm

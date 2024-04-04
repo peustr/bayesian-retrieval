@@ -22,7 +22,6 @@ def make_training_data_loader(
     max_psg_len=256,
     num_train_qry=8,
     num_train_psg=8,
-    tokenizer_cache_file_name=None,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -30,7 +29,6 @@ def make_training_data_loader(
         batched=False,
         remove_columns=data.column_names,
         load_from_cache_file=True,
-        cache_file_name=tokenizer_cache_file_name,
         desc="Running tokenizer on the training data.",
     )
     dataset = TrainingDataset(
@@ -54,7 +52,6 @@ def make_query_data_loader(
     data_file,
     max_qry_len=32,
     batch_size=32,
-    tokenizer_cache_file_name=None,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -62,7 +59,6 @@ def make_query_data_loader(
         batched=False,
         remove_columns=data.column_names,
         load_from_cache_file=True,
-        cache_file_name=tokenizer_cache_file_name,
         desc="Running tokenizer on the queries.",
     )
     dataset = TextDataset(
@@ -84,7 +80,6 @@ def make_corpus_data_loader(
     data_file,
     max_psg_len=256,
     batch_size=32,
-    tokenizer_cache_file_name=None,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -92,7 +87,6 @@ def make_corpus_data_loader(
         batched=False,
         remove_columns=data.column_names,
         load_from_cache_file=True,
-        cache_file_name=tokenizer_cache_file_name,
         desc="Running tokenizer on the corpus.",
     )
     dataset = TextDataset(

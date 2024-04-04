@@ -6,7 +6,7 @@ import torch
 
 from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_corpus_data_loader, make_query_data_loader
-from bret.file_utils import get_embedding_file_name, get_tokenizer_cache_file_name
+from bret.file_utils import get_embedding_file_name
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,6 @@ def main():
     parser.add_argument("--model_name", default="google-bert/bert-base-uncased")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base-uncased.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
-    parser.add_argument("--tokenizer_cache_dir", default="cache/tokenizer")
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
     parser.add_argument("--output_dir", default="output/embeddings")
@@ -50,9 +49,6 @@ def main():
             tokenizer,
             args.query_file,
             max_qry_len=args.max_qry_len,
-            tokenizer_cache_file_name=get_tokenizer_cache_file_name(
-                args.tokenizer_cache_dir, args.model_name, args.query_file
-            ),
         )
         qry_embs = []
         for qry in query_dl:
@@ -73,9 +69,6 @@ def main():
             tokenizer,
             args.corpus_file,
             max_psg_len=args.max_psg_len,
-            tokenizer_cache_file_name=get_tokenizer_cache_file_name(
-                args.tokenizer_cache_dir, args.model_name, args.corpus_file
-            ),
         )
         psg_embs = []
         for psg in corpus_dl:

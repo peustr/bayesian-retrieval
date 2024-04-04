@@ -5,7 +5,7 @@ import torch
 
 from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_training_data_loader
-from bret.file_utils import get_checkpoint_file_name, get_tokenizer_cache_file_name
+from bret.file_utils import get_checkpoint_file_name
 from bret.trainers import BayesianDPRTrainer, DPRTrainer
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,6 @@ def main():
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="google-bert/bert-base-uncased")
     parser.add_argument("--method", default=None, choices=["vi"])
-    parser.add_argument("--tokenizer_cache_dir", default="cache/tokenizer")
     parser.add_argument("--num_train_qry", type=int, default=8)
     parser.add_argument("--num_train_psg", type=int, default=8)
     parser.add_argument("--num_epochs", type=int, default=4)
@@ -45,9 +44,6 @@ def main():
         max_psg_len=args.max_psg_len,
         num_train_qry=args.num_train_qry,
         num_train_psg=args.num_train_psg,
-        tokenizer_cache_file_name=get_tokenizer_cache_file_name(
-            args.tokenizer_cache_dir, args.model_name, args.training_data_file
-        ),
     )
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
     if args.method == "vi":

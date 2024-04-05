@@ -13,7 +13,6 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
     --training_data_file data/msmarco-train.jsonl \
     --model_name google-bert/bert-base-uncased \
     --method vi \
-    --tokenizer_cache_dir cache/tokenizer \
     --num_train_qry 8 \
     --num_train_psg 8 \
     --num_epochs 8 \

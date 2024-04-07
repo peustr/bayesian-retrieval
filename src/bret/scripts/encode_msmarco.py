@@ -49,9 +49,10 @@ def main():
             tokenizer,
             args.query_file,
             max_qry_len=args.max_qry_len,
+            shuffle=False,
         )
         qry_embs = []
-        for qry in query_dl:
+        for _, qry in query_dl:
             qry = qry.to(device)
             qry_reps, _ = model(qry, None)
             qry_embs.append(qry_reps.detach().cpu())
@@ -69,9 +70,10 @@ def main():
             tokenizer,
             args.corpus_file,
             max_psg_len=args.max_psg_len,
+            shuffle=False,
         )
         psg_embs = []
-        for psg in corpus_dl:
+        for _, psg in corpus_dl:
             psg = psg.to(device)
             _, psg_reps = model(None, psg)
             psg_embs.append(psg_reps.detach().cpu())

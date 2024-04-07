@@ -22,9 +22,9 @@ class FaissIndex:
         psg_reps = _ensure_numpy(psg_reps)
         self.index.add(psg_reps)
 
-    def search(self, qry_reps, k):
-        qry_reps = _ensure_numpy(qry_reps)
-        return self.index.search(qry_reps, k)
+    def search(self, qry_rep, k):
+        qry_rep = _ensure_numpy(qry_rep)
+        return self.index.search(qry_rep, k)
 
     def batch_search(self, qry_reps, k, batch_size):
         qry_reps = _ensure_numpy(qry_reps)

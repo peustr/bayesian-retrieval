@@ -60,9 +60,10 @@ class TextDataset(PyTorchDataset):
 
     def __getitem__(self, idx):
         group = self.data[idx]
+        text_id = group["id"]
         text = group["text"]
         encoded_text = self.create_one_example(text)
-        return encoded_text
+        return text_id, encoded_text
 
 
 class TrainingDataset(PyTorchDataset):
@@ -122,13 +123,19 @@ class TextCollator(DataCollatorWithPadding):
         self.max_len = max_len
 
     def __call__(self, batch):
-        txt_collated = self.tokenizer.pad(
-            batch,
+        ids = [item[0] for item in batch]
+        txts = [item[1] for item in batch]
+        if isinstance(ids[0], list):
+            ids = sum(ids, [])
+        if isinstance(txts[0], list):
+            txts = sum(txts, [])
+        txts_collated = self.tokenizer.pad(
+            txts,
             padding="max_length",
             max_length=self.max_len,
             return_tensors="pt",
         )
-        return txt_collated
+        return ids, txts_collated
 
 
 class QueryDocumentCollator(DataCollatorWithPadding):

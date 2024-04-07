@@ -44,6 +44,7 @@ def main():
         max_psg_len=args.max_psg_len,
         num_train_qry=args.num_train_qry,
         num_train_psg=args.num_train_psg,
+        shuffle=True,
     )
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
     if args.method == "vi":

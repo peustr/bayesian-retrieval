@@ -1,7 +1,7 @@
 import logging
 
 from datasets import Dataset as HFDataset
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader
 
 from bret.data_loaders.preprocessors import (
     QueryDocumentCollator,
@@ -22,6 +22,7 @@ def make_training_data_loader(
     max_psg_len=256,
     num_train_qry=8,
     num_train_psg=8,
+    shuffle=True,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -41,7 +42,7 @@ def make_training_data_loader(
     return DataLoader(
         dataset,
         batch_size=num_train_qry,
-        sampler=RandomSampler(dataset),
+        shuffle=shuffle,
         collate_fn=QueryDocumentCollator(tokenizer, max_qry_len=max_qry_len, max_psg_len=max_psg_len),
         drop_last=True,
     )
@@ -52,6 +53,7 @@ def make_query_data_loader(
     data_file,
     max_qry_len=32,
     batch_size=32,
+    shuffle=True,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -69,7 +71,7 @@ def make_query_data_loader(
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        sampler=RandomSampler(dataset),
+        shuffle=shuffle,
         collate_fn=TextCollator(tokenizer, max_qry_len),
         drop_last=False,
     )
@@ -80,6 +82,7 @@ def make_corpus_data_loader(
     data_file,
     max_psg_len=256,
     batch_size=32,
+    shuffle=True,
 ):
     data = HFDataset.from_json(data_file)
     tokenized_data = data.map(
@@ -97,7 +100,7 @@ def make_corpus_data_loader(
     return DataLoader(
         dataset,
         batch_size=batch_size,
-        sampler=RandomSampler(dataset),
+        shuffle=shuffle,
         collate_fn=TextCollator(tokenizer, max_psg_len),
         drop_last=False,
     )

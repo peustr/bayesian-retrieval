@@ -18,3 +18,12 @@ def get_embedding_file_name(embedding_dir, ckpt_file, data_file):
         data_file = data_file.split("/")[-1].split(".")[0]
     embedding_file_name = "{}-{}.pt".format(ckpt_file, data_file)
     return os.path.join(embedding_dir, embedding_file_name)
+
+
+def get_results_file_name(results_dir, ckpt_file, data_file, k):
+    if "/" in ckpt_file:
+        ckpt_file = ckpt_file.split("/")[-1].split(".")[0]
+    if "/" in data_file:
+        data_file = data_file.split("/")[-1].split(".")[0]
+    results_file_name = "run-{}-{}-k={}.pt".format(ckpt_file, data_file, k)
+    return os.path.join(results_dir, results_file_name)

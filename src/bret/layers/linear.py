@@ -28,19 +28,12 @@ class BayesianLinear(nn.Module):
 
     def forward(self, x):
         batch_size = x.size(0)
-        num_tokens = x.size(1)
-        out_features_dim = self.weight_mean.size(0)
-        in_features_dim = self.weight_mean.size(1)
         z = (
             torch.randn(
                 (batch_size, *self.weight_mean.shape), dtype=self.weight_mean.dtype, device=self.weight_mean.device
             )
             * self.weight_var.sqrt()
         )
-        out = F.linear(
-            x,
-            (self.weight_mean + z).reshape(batch_size * out_features_dim, in_features_dim),
-            self.bias.repeat(batch_size),
-        )
-        out = out.reshape(batch_size, num_tokens, batch_size, out_features_dim).mean(2)
-        return out
+        if self.bias is not None:
+            return torch.bmm(x, (self.weight_mean + z).transpose(-2, -1)) + self.bias
+        return torch.bmm(x, (self.weight_mean + z).transpose(-2, -1))

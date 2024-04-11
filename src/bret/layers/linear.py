@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class BayesianLinear(nn.Module):
     def __init__(self, prior, prior_var=1.0):
         super().__init__()
-        self.weight_prior_mean = torch.tensor(prior.weight.data, dtype=prior.weight.dtype, device=prior.weight.device)
+        self.weight_prior_mean = prior.weight.data.clone().detach()
         self.weight_prior_var = prior_var
         self.weight_mean = prior.weight
         self.weight_logvar = nn.Parameter(-torch.rand_like(prior.weight))

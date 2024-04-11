@@ -60,10 +60,37 @@ class BayesianBERTRetriever(BERTRetriever):
 
     def kl(self):
         sum_kld = None
-        for n, m in self.backbone.named_modules():
+        for _, m in self.backbone.named_modules():
             if type(m) == BayesianLinear:
                 if sum_kld is None:
                     sum_kld = m.kl()
                 else:
                     sum_kld += m.kl()
         return sum_kld
+
+    def forward(self, query=None, passage=None, num_samples=None):
+        if num_samples is None:
+            qry_reps = self._encode_query(query)
+            if qry_reps is not None:
+                qry_reps = qry_reps.unsqueeze(1)
+            psg_reps = self._encode_passage(passage)
+            if psg_reps is not None:
+                psg_reps = psg_reps.unsqueeze(1)
+            return (qry_reps, psg_reps)
+
+        assert query["input_ids"].size(1) == passage["input_ids"].size(1)
+        feature_dim = query["input_ids"].size(1)
+
+        num_queries = query["input_ids"].size(0)
+        query["input_ids"] = query["input_ids"].repeat_interleave(num_samples, dim=0)
+        query["attention_mask"] = query["attention_mask"].repeat_interleave(num_samples, dim=0)
+        qry_reps = self._encode_query(query)
+        qry_reps = qry_reps.reshape(num_queries, num_samples, feature_dim)
+
+        num_passages = passage["input_ids"].size(0)
+        passage["input_ids"] = passage["input_ids"].repeat_interleave(num_samples, dim=0)
+        passage["attention_mask"] = passage["attention_mask"].repeat_interleave(num_samples, dim=0)
+        psg_reps = self._encode_passage(passage)
+        psg_reps = psg_reps.reshape(num_passages, num_samples, feature_dim)
+
+        return (qry_reps, psg_reps)

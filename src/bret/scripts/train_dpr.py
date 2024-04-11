@@ -6,6 +6,7 @@ import torch
 from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_training_data_loader
 from bret.file_utils import get_checkpoint_file_name
+from bret.model_utils import get_hf_model_id
 from bret.trainers import BayesianDPRTrainer, DPRTrainer
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,9 @@ def main():
     )
     parser = argparse.ArgumentParser()
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
-    parser.add_argument("--model_name", default="google-bert/bert-base-uncased")
+    parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--num_train_qry", type=int, default=8)
     parser.add_argument("--num_train_psg", type=int, default=8)
     parser.add_argument("--num_epochs", type=int, default=4)
@@ -33,10 +35,15 @@ def main():
     logger.info("Using device: %s", device)
     if args.method == "vi":
         logger.info("Training a Bayesian BERT retriever for DPR on MS-MARCO with variational inference.")
-        tokenizer, model = BayesianBERTRetriever.build(args.model_name, device=device)
+        tokenizer, model = BayesianBERTRetriever.build(get_hf_model_id(args.model_name), device=device)
     else:
         logger.info("Training a BERT retriever for DPR on MS-MARCO.")
-        tokenizer, model = BERTRetriever.build(args.model_name, device=device)
+        tokenizer, model = BERTRetriever.build(get_hf_model_id(args.model_name), device=device)
+    if args.encoder_ckpt is not None:
+        logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
+        model.load_state_dict(torch.load(args.encoder_ckpt))
+    model.train()
+
     train_dl = make_training_data_loader(
         tokenizer,
         args.training_data_file,

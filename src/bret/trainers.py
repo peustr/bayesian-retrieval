@@ -66,7 +66,7 @@ class BayesianDPRTrainer:
                 psg = psg.to(device)
                 optimizer.zero_grad()
                 qry_reps, psg_reps = model(qry, psg)
-                scores = qry_reps @ psg_reps.T
+                scores = qry_reps.mean(dim=1) @ psg_reps.mean(dim=1).T  # Averaging across num_samples.
                 targets = torch.arange(scores.size(0), device=device, dtype=torch.long) * (
                     psg_reps.size(0) // qry_reps.size(0)
                 )

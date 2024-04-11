@@ -7,6 +7,7 @@ import torch
 from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_corpus_data_loader, make_query_data_loader
 from bret.file_utils import get_embedding_file_name
+from bret.model_utils import get_hf_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,8 @@ def main():
     parser.add_argument("--skip_queries", action="store_true")
     parser.add_argument("--corpus_file", default="data/msmarco-corpus.jsonl")
     parser.add_argument("--skip_corpus", action="store_true")
-    parser.add_argument("--model_name", default="google-bert/bert-base-uncased")
-    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base-uncased.pt")
+    parser.add_argument("--model_name", default="bert-base")
+    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
@@ -32,10 +33,10 @@ def main():
     logger.info("Using device: %s", device)
     if args.method == "vi":
         logger.info("Instantiating a Bayesian BERT retriever trained on MS-MARCO with variational inference.")
-        tokenizer, model = BayesianBERTRetriever.build(args.model_name, device=device)
+        tokenizer, model = BayesianBERTRetriever.build(get_hf_model_id(args.model_name), device=device)
     else:
         logger.info("Instantiating a BERT retriever trained on MS-MARCO.")
-        tokenizer, model = BERTRetriever.build(args.model_name, device=device)
+        tokenizer, model = BERTRetriever.build(get_hf_model_id(args.model_name), device=device)
     logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
     model.load_state_dict(torch.load(args.encoder_ckpt))
     model.eval()

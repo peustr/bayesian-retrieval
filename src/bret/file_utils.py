@@ -2,8 +2,6 @@ import os
 
 
 def get_checkpoint_file_name(model_dir, model_name, method=None):
-    if "/" in model_name:
-        model_name = model_name.split("/")[-1]
     if method is not None:
         ckpt_file_name = "{}-{}.pt".format(model_name, method)
     else:

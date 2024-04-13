@@ -41,7 +41,15 @@ def main():
         tokenizer, model = BERTRetriever.build(get_hf_model_id(args.model_name), device=device)
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
-        model.load_state_dict(torch.load(args.encoder_ckpt))
+        sd = torch.load(args.encoder_ckpt)
+        if args.method == "vi":
+            sdnew = {}
+            for k, v in sd.items():
+                if k.endswith(".weight"):
+                    sdnew[k.replace(".weight", ".weight_mean")] = v
+            model.load_state_dict(sdnew, strict=False)
+        else:
+            model.load_state_dict(sd)
     model.train()
 
     train_dl = make_training_data_loader(

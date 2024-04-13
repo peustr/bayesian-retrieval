@@ -9,4 +9,14 @@ source ${HOME}/.bashrc
 # Activate env.
 conda activate bret
 
-CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_msmarco.py
+CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_msmarco.py \
+    --msmarco_dir data/msmarco \
+    --split dev \
+    --query_file data/msmarco-dev.jsonl \
+    --corpus_file data/msmarco-corpus.jsonl \
+    --model_name bert-tiny \
+    --encoder_ckpt output/trained_encoders/bert-tiny.pt \
+    --max_qry_len 32 \
+    --k 20 \
+    --embeddings_dir output/embeddings \
+    --output_dir output/results

@@ -25,8 +25,8 @@ def main():
     parser.add_argument("--split", default="dev", choices=["train", "dev", "test"])
     parser.add_argument("--query_file", default="data/msmarco-dev.jsonl")
     parser.add_argument("--corpus_file", default="data/msmarco-corpus.jsonl")
-    parser.add_argument("--model_name", default="bert-base")
-    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
+    parser.add_argument("--model_name", default="bert-tiny")
+    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-tiny.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--k", type=int, default=20)  # k as in: nDCG@k.

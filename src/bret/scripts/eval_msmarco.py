@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--model_name", default="bert-tiny")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-tiny.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--num_samples", type=int, default=100)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--k", type=int, default=20)  # k as in: nDCG@k.
     parser.add_argument("--embeddings_dir", default="output/embeddings")
@@ -66,7 +67,11 @@ def main():
     run = {}
     for qry_id, qry in query_dl:
         qry = qry.to(device)
-        qry_reps, _ = model(qry, None)
+        if args.method == "vi":
+            qry_reps, _ = model(qry, None, args.num_samples)
+            qry_reps = qry_reps.mean(1)
+        else:
+            qry_reps, _ = model(qry, None)
         scores, indices = index.search(qry_reps, args.k)
         qid = str(qry_id[0])
         run[qid] = {}

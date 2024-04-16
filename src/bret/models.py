@@ -11,23 +11,15 @@ class BERTRetriever(nn.Module):
         self.to(device)
 
     def forward(self, query=None, passage=None):
-        qry_reps = self._encode_query(query)
-        psg_reps = self._encode_passage(passage)
+        qry_reps = self._encode(query)
+        psg_reps = self._encode(passage)
         return (qry_reps, psg_reps)
 
-    def _encode_query(self, qry):
-        if qry is None:
+    def _encode(self, qry_or_psg):
+        if qry_or_psg is None:
             return None
-        qry_out = self.backbone(**qry, return_dict=True)
-        qry_reps = qry_out.last_hidden_state[:, 0]
-        return qry_reps
-
-    def _encode_passage(self, psg):
-        if psg is None:
-            return None
-        psg_out = self.backbone(**psg, return_dict=True)
-        psg_reps = psg_out.last_hidden_state[:, 0]
-        return psg_reps
+        out = self.backbone(**qry_or_psg, return_dict=True)
+        return out.last_hidden_state[:, 0]
 
     @classmethod
     def build(cls, model_name, device="cpu", **hf_kwargs):
@@ -70,27 +62,24 @@ class BayesianBERTRetriever(BERTRetriever):
 
     def forward(self, query=None, passage=None, num_samples=None):
         if num_samples is None:
-            qry_reps = self._encode_query(query)
+            qry_reps = self._encode(query)
             if qry_reps is not None:
                 qry_reps = qry_reps.unsqueeze(1)
-            psg_reps = self._encode_passage(passage)
+            psg_reps = self._encode(passage)
             if psg_reps is not None:
                 psg_reps = psg_reps.unsqueeze(1)
             return (qry_reps, psg_reps)
 
-        assert query["input_ids"].size(1) == passage["input_ids"].size(1)
-        feature_dim = query["input_ids"].size(1)
-
-        num_queries = query["input_ids"].size(0)
-        query["input_ids"] = query["input_ids"].repeat_interleave(num_samples, dim=0)
-        query["attention_mask"] = query["attention_mask"].repeat_interleave(num_samples, dim=0)
-        qry_reps = self._encode_query(query)
-        qry_reps = qry_reps.reshape(num_queries, num_samples, feature_dim)
-
-        num_passages = passage["input_ids"].size(0)
-        passage["input_ids"] = passage["input_ids"].repeat_interleave(num_samples, dim=0)
-        passage["attention_mask"] = passage["attention_mask"].repeat_interleave(num_samples, dim=0)
-        psg_reps = self._encode_passage(passage)
-        psg_reps = psg_reps.reshape(num_passages, num_samples, feature_dim)
+        qry_reps = self._encode_vi(query, num_samples)
+        psg_reps = self._encode_vi(passage, num_samples)
 
         return (qry_reps, psg_reps)
+
+    def _encode_vi(self, qry_or_psg, num_samples):
+        reps = None
+        if qry_or_psg is not None:
+            batch_size = qry_or_psg["input_ids"].size(0)
+            qry_or_psg["input_ids"] = qry_or_psg["input_ids"].repeat_interleave(num_samples, dim=0)
+            qry_or_psg["attention_mask"] = qry_or_psg["attention_mask"].repeat_interleave(num_samples, dim=0)
+            reps = self._encode(qry_or_psg).reshape(batch_size, num_samples, -1)
+        return reps

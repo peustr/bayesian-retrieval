@@ -24,6 +24,8 @@ def main():
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--num_samples", type=int, default=10)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
     parser.add_argument("--output_dir", default="output/embeddings")
@@ -50,12 +52,17 @@ def main():
             tokenizer,
             args.query_file,
             max_qry_len=args.max_qry_len,
+            batch_size=args.batch_size,
             shuffle=False,
         )
         qry_embs = []
         for _, qry in query_dl:
             qry = qry.to(device)
-            qry_reps, _ = model(qry, None)
+            if args.method == "vi":
+                qry_reps, _ = model(qry, None, args.num_samples)
+                qry_reps = qry_reps.mean(1)
+            else:
+                qry_reps, _ = model(qry, None)
             qry_embs.append(qry_reps.detach().cpu())
         qry_embs = torch.cat(qry_embs, dim=0)
         torch.save(qry_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, args.query_file))
@@ -71,12 +78,17 @@ def main():
             tokenizer,
             args.corpus_file,
             max_psg_len=args.max_psg_len,
+            batch_size=args.batch_size,
             shuffle=False,
         )
         psg_embs = []
         for _, psg in corpus_dl:
             psg = psg.to(device)
-            _, psg_reps = model(None, psg)
+            if args.method == "vi":
+                _, psg_reps = model(None, psg, args.num_samples)
+                psg_reps = psg_reps.mean(1)
+            else:
+                _, psg_reps = model(None, psg)
             psg_embs.append(psg_reps.detach().cpu())
         psg_embs = torch.cat(psg_embs, dim=0)
         torch.save(psg_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, args.corpus_file))

@@ -38,3 +38,9 @@ class FaissIndex:
         scores = np.concatenate(scores, axis=0)
         indices = np.concatenate(indices, axis=0)
         return scores, indices
+
+    @classmethod
+    def build(cls, embeddings):
+        index = cls(embeddings.size(1))
+        index.add(embeddings)
+        return index

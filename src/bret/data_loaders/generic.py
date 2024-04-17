@@ -26,21 +26,33 @@ class GenericDataLoader:
     def load(self):
         self.check(self.corpus_file, "jsonl")
         self.check(self.query_file, "jsonl")
-        self.check(self.qrels_file, "tsv")
-        if not len(self.corpus):
+        if len(self.corpus.keys()) == 0:
             self._load_corpus()
-        if not len(self.queries):
-            self._load_queries()
-        if os.path.exists(self.qrels_file):
-            self._load_qrels()
-            self.queries = {qid: self.queries[qid] for qid in self.qrels}
+        if len(self.queries.keys()) == 0:
+            self._load_queries()  # Also loads qrels.
         return self.corpus, self.queries, self.qrels
 
     def load_corpus(self):
         self.check(self.corpus_file, "jsonl")
-        if not len(self.corpus):
+        if len(self.corpus.keys()) == 0:
             self._load_corpus()
         return self.corpus
+
+    def load_queries(self):
+        self.check(self.query_file, "jsonl")
+        if len(self.queries.keys()) == 0:
+            self._load_queries()
+        if os.path.exists(self.qrels_file):
+            self.check(self.qrels_file, "tsv")
+            self._load_qrels()
+            self.queries = {qid: self.queries[qid] for qid in self.qrels}
+        return self.queries
+
+    def load_qrels(self):
+        self.check(self.qrels_file, "tsv")
+        if os.path.exists(self.qrels_file):
+            self._load_qrels()
+        return self.qrels
 
     def _load_corpus(self):
         with open(self.corpus_file, encoding="utf8") as fIn:

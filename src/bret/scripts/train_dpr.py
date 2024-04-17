@@ -3,11 +3,10 @@ import logging
 
 import torch
 
-from bret import BayesianBERTRetriever, BERTRetriever
 from bret.data_loaders import make_training_data_loader
 from bret.file_utils import get_checkpoint_file_name
-from bret.model_utils import get_hf_model_id
-from bret.trainers import BayesianDPRTrainer, DPRTrainer
+from bret.models import model_factory
+from bret.training import BayesianDPRTrainer, DPRTrainer
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +32,7 @@ def main():
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     logger.info("Using device: %s", device)
-    if args.method == "vi":
-        logger.info("Training a Bayesian BERT retriever for DPR on MS-MARCO with variational inference.")
-        tokenizer, model = BayesianBERTRetriever.build(get_hf_model_id(args.model_name), device=device)
-    else:
-        logger.info("Training a BERT retriever for DPR on MS-MARCO.")
-        tokenizer, model = BERTRetriever.build(get_hf_model_id(args.model_name), device=device)
+    tokenizer, model = model_factory(args.model_name, args.method, device)
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)

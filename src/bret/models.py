@@ -1,7 +1,22 @@
+import logging
+
 import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer
 
 from bret.layers.linear import BayesianLinear
+from bret.model_utils import get_hf_model_id
+
+logger = logging.getLogger(__name__)
+
+
+def model_factory(model_name, method, device):
+    if method == "vi":
+        logger.info("Instantiating a Bayesian BERT retriever.")
+        tokenizer, model = BayesianBERTRetriever.build(get_hf_model_id(model_name), device=device)
+    else:
+        logger.info("Instantiating a BERT retriever.")
+        tokenizer, model = BERTRetriever.build(get_hf_model_id(model_name), device=device)
+    return tokenizer, model
 
 
 class BERTRetriever(nn.Module):

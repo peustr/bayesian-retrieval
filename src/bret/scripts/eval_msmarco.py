@@ -1,13 +1,11 @@
 import argparse
 import json
 import logging
-import time
 
-import numpy as np
 import torch
 
 from bret.data_loaders import GenericDataLoader, make_query_data_loader
-from bret.evaluation import calculate_metrics, generate_run
+from bret.evaluation import Evaluator
 from bret.file_utils import get_embedding_file_name, get_results_file_name
 from bret.indexing import FaissIndex
 from bret.models import model_factory
@@ -42,11 +40,7 @@ def main():
     model.load_state_dict(torch.load(args.encoder_ckpt))
     model.eval()
 
-    psg_reps = torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, args.corpus_file))
-    index = FaissIndex.build(psg_reps)
-
-    logger.info("Generating run. Searching corpus with queries from: %s", args.query_file)
-    t_start = time.time()
+    logger.info("Searching corpus with queries from: %s", args.query_file)
     query_dl = make_query_data_loader(
         tokenizer,
         args.query_file,
@@ -54,17 +48,16 @@ def main():
         batch_size=1,
         shuffle=False,
     )
-    run = generate_run(query_dl, model, index, device, k=args.k, method=args.method, num_samples=args.num_samples)
-    t_end = time.time()
-    logger.info("Run generated in %.2f minutes.", (t_end - t_start) / 60)
-
-    logger.info("Evaluating run...")
     qrels = GenericDataLoader(args.msmarco_dir, split=args.split).load_qrels()
-    results = calculate_metrics(run, qrels, metrics={"ndcg", "map", "recip_rank"}, k=args.k)
+    index = FaissIndex.build(
+        torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, args.corpus_file))
+    )
+    evaluator = Evaluator(model, index, device, method=args.method, metrics={"ndcg", "map", "recip_rank"})
+    results = evaluator.evaluate_retriever(query_dl, qrels, k=args.k, num_samples=args.num_samples)
     results_file_name = get_results_file_name(args.output_dir, args.encoder_ckpt, args.corpus_file, args.k)
     with open(results_file_name, "w") as fp:
         fp.write(json.dumps(results))
-    logger.info("Results stored in: %s", results_file_name)
+    logger.info("Done. Results stored in: %s", results_file_name)
 
 
 if __name__ == "__main__":

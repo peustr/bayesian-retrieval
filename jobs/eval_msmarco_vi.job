@@ -14,10 +14,10 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_msmarco.py \
     --split dev \
     --query_file data/msmarco-dev.jsonl \
     --corpus_file data/msmarco-corpus.jsonl \
-    --model_name bert-tiny \
-    --encoder_ckpt output/trained_encoders/bert-tiny-vi.pt \
+    --model_name bert-base \
+    --encoder_ckpt output/trained_encoders/bert-base-vi.pt \
     --method vi \
-    --num_samples 10\
+    --num_samples 10 \
     --max_qry_len 32 \
     --k 20 \
     --embeddings_dir output/embeddings \

@@ -3,7 +3,7 @@
 #SBATCH -e ./output/logs/%A.err
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=1
-#SBATCH --time=72:00:00
+#SBATCH --time=144:00:00
 # Set-up the environment.
 source ${HOME}/.bashrc
 # Activate env.
@@ -11,12 +11,12 @@ conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
     --training_data_file data/msmarco-train.jsonl \
-    --model_name bert-tiny \
+    --model_name bert-base \
     --num_train_qry 8 \
     --num_train_psg 8 \
     --num_epochs 10 \
-    --lr 0.0005 \
-    --gamma 0.6 \
+    --lr 0.00005 \
+    --gamma 0.5 \
     --max_qry_len 32 \
     --max_psg_len 256 \
     --output_dir output/trained_encoders

@@ -24,8 +24,8 @@ def main():
     parser.add_argument("--split", default="dev", choices=["train", "dev", "test"])
     parser.add_argument("--query_file", default="data/msmarco-dev.jsonl")
     parser.add_argument("--corpus_file", default="data/msmarco-corpus.jsonl")
-    parser.add_argument("--model_name", default="bert-tiny")
-    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-tiny.pt")
+    parser.add_argument("--model_name", default="bert-base")
+    parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
     parser.add_argument("--method", default=None, choices=["vi"])
     parser.add_argument("--num_samples", type=int, default=100)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
@@ -33,6 +33,7 @@ def main():
     parser.add_argument("--embeddings_dir", default="output/embeddings")
     parser.add_argument("--output_dir", default="output/results")
     args = parser.parse_args()
+    logger.info(args.__dict__)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     logger.info("Using device: %s", device)

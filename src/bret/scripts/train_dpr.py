@@ -29,6 +29,7 @@ def main():
     parser.add_argument("--max_psg_len", type=int, default=256)
     parser.add_argument("--output_dir", default="output/trained_encoders")
     args = parser.parse_args()
+    logger.info(args.__dict__)
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     logger.info("Using device: %s", device)

@@ -1,9 +1,6 @@
 import csv
 import json
-import logging
 import os
-
-logger = logging.getLogger(__name__)
 
 
 class GenericDataLoader:
@@ -31,27 +28,18 @@ class GenericDataLoader:
         self.check(self.query_file, "jsonl")
         self.check(self.qrels_file, "tsv")
         if not len(self.corpus):
-            logger.info("Loading Corpus...")
             self._load_corpus()
-            logger.info("Loaded %d %s Documents.", len(self.corpus), self.split.upper())
-            logger.info("Doc Example: %s", list(self.corpus.values())[0])
         if not len(self.queries):
-            logger.info("Loading Queries...")
             self._load_queries()
         if os.path.exists(self.qrels_file):
             self._load_qrels()
             self.queries = {qid: self.queries[qid] for qid in self.qrels}
-            logger.info("Loaded %d %s Queries.", len(self.queries), self.split.upper())
-            logger.info("Query Example: %s", list(self.queries.values())[0])
         return self.corpus, self.queries, self.qrels
 
     def load_corpus(self):
         self.check(self.corpus_file, "jsonl")
         if not len(self.corpus):
-            logger.info("Loading Corpus...")
             self._load_corpus()
-            logger.info("Loaded %d Documents.", len(self.corpus))
-            logger.info("Doc Example: %s", list(self.corpus.values())[0])
         return self.corpus
 
     def _load_corpus(self):

@@ -1,13 +1,24 @@
 import logging
+import math
 import time
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import LinearLR, SequentialLR
 
 logger = logging.getLogger(__name__)
+
+
+def make_lr_scheduler_with_warmup(optimizer, training_data, num_epochs, warmup_rate):
+    num_training_steps = math.ceil(len(training_data) / training_data.batch_size) * num_epochs
+    warmup = LinearLR(optimizer, start_factor=0.001, end_factor=1.0, total_iters=int(warmup_rate * num_training_steps))
+    decay = LinearLR(
+        optimizer, start_factor=1.0, end_factor=0.01, total_iters=int((1 - warmup_rate) * num_training_steps)
+    )
+    scheduler = SequentialLR(optimizer, [warmup, decay], [int(warmup_rate * num_training_steps)])
+    return scheduler
 
 
 class DPRTrainer:
@@ -16,9 +27,9 @@ class DPRTrainer:
         self.training_data = training_data
         self.device = device
 
-    def train(self, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
+    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None):
         optimizer = Adam(self.model.parameters(), lr=lr)
-        scheduler = ExponentialLR(optimizer, gamma=gamma)
+        scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
         else:
@@ -39,12 +50,13 @@ class DPRTrainer:
                 loss = F.cross_entropy(scores, targets)
                 loss.backward()
                 optimizer.step()
+                scheduler.step()
                 training_losses.append(loss.item())
-            scheduler.step()
             avg_training_loss = np.mean(training_losses)
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
             logger.info("Average training loss: %.2f", avg_training_loss)
+            logger.info("Current learning rate: %.7f", scheduler.get_last_lr())
             if avg_training_loss < min_training_loss:
                 torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss
@@ -55,9 +67,9 @@ class BayesianDPRTrainer(DPRTrainer):
     def __init__(self, model, training_data, device):
         super().__init__(model, training_data, device)
 
-    def train(self, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
+    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None):
         optimizer = Adam(self.model.parameters(), lr=lr)
-        scheduler = ExponentialLR(optimizer, gamma=gamma)
+        scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
         else:
@@ -81,15 +93,16 @@ class BayesianDPRTrainer(DPRTrainer):
                 loss = loss_ce + loss_kld
                 loss.backward()
                 optimizer.step()
+                scheduler.step()
                 training_losses_ce.append(loss_ce.item())
                 training_losses_kld.append(loss_kld.item())
-            scheduler.step()
             avg_training_loss_ce = np.mean(training_losses_ce)
             avg_training_loss_kld = np.mean(training_losses_kld)
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
             logger.info("Average training loss: %.2f", avg_training_loss_ce)
             logger.info("Average KL divergence: %.2f", avg_training_loss_kld)
+            logger.info("Current learning rate: %.7f", scheduler.get_last_lr())
             if avg_training_loss_ce < min_training_loss:
                 torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss_ce

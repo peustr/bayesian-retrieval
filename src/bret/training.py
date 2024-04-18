@@ -11,9 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class DPRTrainer:
-    @staticmethod
-    def train(model, training_data, device, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
-        optimizer = Adam(model.parameters(), lr=lr)
+    def __init__(self, model, training_data, device):
+        self.model = model
+        self.training_data = training_data
+        self.device = device
+
+    def train(self, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
+        optimizer = Adam(self.model.parameters(), lr=lr)
         scheduler = ExponentialLR(optimizer, gamma=gamma)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
@@ -21,15 +25,15 @@ class DPRTrainer:
             min_training_loss = -1.0
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
-            model.train()
+            self.model.train()
             training_losses = []
-            for qry, psg in training_data:
-                qry = qry.to(device)
-                psg = psg.to(device)
+            for qry, psg in self.training_data:
+                qry = qry.to(self.device)
+                psg = psg.to(self.device)
                 optimizer.zero_grad()
-                qry_reps, psg_reps = model(qry, psg)
+                qry_reps, psg_reps = self.model(qry, psg)
                 scores = qry_reps @ psg_reps.T
-                targets = torch.arange(scores.size(0), device=device, dtype=torch.long) * (
+                targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
                     psg_reps.size(0) // qry_reps.size(0)
                 )
                 loss = F.cross_entropy(scores, targets)
@@ -42,15 +46,17 @@ class DPRTrainer:
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
             logger.info("Average training loss: %.2f", avg_training_loss)
             if avg_training_loss < min_training_loss:
-                torch.save(model.state_dict(), ckpt_file_name)
+                torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss
                 logger.info("Model saved in: %s", ckpt_file_name)
 
 
-class BayesianDPRTrainer:
-    @staticmethod
-    def train(model, training_data, device, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
-        optimizer = Adam(model.parameters(), lr=lr)
+class BayesianDPRTrainer(DPRTrainer):
+    def __init__(self, model, training_data, device):
+        super().__init__(model, training_data, device)
+
+    def train(self, num_epochs=4, lr=5e-5, gamma=0.5, ckpt_file_name=None):
+        optimizer = Adam(self.model.parameters(), lr=lr)
         scheduler = ExponentialLR(optimizer, gamma=gamma)
         if ckpt_file_name is not None:
             min_training_loss = 1e5
@@ -58,20 +64,20 @@ class BayesianDPRTrainer:
             min_training_loss = -1.0
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
-            model.train()
+            self.model.train()
             training_losses_ce = []
             training_losses_kld = []
-            for qry, psg in training_data:
-                qry = qry.to(device)
-                psg = psg.to(device)
+            for qry, psg in self.training_data:
+                qry = qry.to(self.device)
+                psg = psg.to(self.device)
                 optimizer.zero_grad()
-                qry_reps, psg_reps = model(qry, psg)
+                qry_reps, psg_reps = self.model(qry, psg)
                 scores = qry_reps.mean(dim=1) @ psg_reps.mean(dim=1).T  # Averaging across num_samples.
-                targets = torch.arange(scores.size(0), device=device, dtype=torch.long) * (
+                targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
                     psg_reps.size(0) // qry_reps.size(0)
                 )
                 loss_ce = F.cross_entropy(scores, targets)
-                loss_kld = model.kl() / len(training_data.dataset)
+                loss_kld = self.model.kl() / len(self.training_data.dataset)
                 loss = loss_ce + loss_kld
                 loss.backward()
                 optimizer.step()
@@ -85,6 +91,6 @@ class BayesianDPRTrainer:
             logger.info("Average training loss: %.2f", avg_training_loss_ce)
             logger.info("Average KL divergence: %.2f", avg_training_loss_kld)
             if avg_training_loss_ce < min_training_loss:
-                torch.save(model.state_dict(), ckpt_file_name)
+                torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss_ce
                 logger.info("Model saved in: %s", ckpt_file_name)

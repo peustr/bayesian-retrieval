@@ -5,7 +5,7 @@ import torch
 
 from bret.data_loaders import make_training_data_loader
 from bret.file_utils import get_checkpoint_file_name
-from bret.models import model_factory
+from bret.models import BayesianBERTRetriever, model_factory
 from bret.training import BayesianDPRTrainer, DPRTrainer
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def main():
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)
-        if args.method == "vi":
+        if isinstance(model, BayesianBERTRetriever):
             sdnew = {}
             for k, v in sd.items():
                 if k.endswith(".weight"):
@@ -57,26 +57,11 @@ def main():
         shuffle=True,
     )
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
-    if args.method == "vi":
-        BayesianDPRTrainer.train(
-            model,
-            train_dl,
-            device,
-            num_epochs=args.num_epochs,
-            lr=args.lr,
-            gamma=args.gamma,
-            ckpt_file_name=ckpt_file_name,
-        )
+    if isinstance(model, BayesianBERTRetriever):
+        trainer = BayesianDPRTrainer(model, train_dl, device)
     else:
-        DPRTrainer.train(
-            model,
-            train_dl,
-            device,
-            num_epochs=args.num_epochs,
-            lr=args.lr,
-            gamma=args.gamma,
-            ckpt_file_name=ckpt_file_name,
-        )
+        trainer = DPRTrainer(model, train_dl, device)
+    trainer.train(num_epochs=args.num_epochs, lr=args.lr, gamma=args.gamma, ckpt_file_name=ckpt_file_name)
     logger.info("Training finished after %d epochs.", args.num_epochs)
 
 

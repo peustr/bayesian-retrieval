@@ -52,7 +52,7 @@ def main():
     index = FaissIndex.build(
         torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, args.corpus_file))
     )
-    evaluator = Evaluator(model, index, device, method=args.method, metrics={"ndcg", "map", "recip_rank"})
+    evaluator = Evaluator(model, index, device, metrics={"ndcg", "map", "recip_rank"})
     results = evaluator.evaluate_retriever(query_dl, qrels, k=args.k, num_samples=args.num_samples)
     results_file_name = get_results_file_name(args.output_dir, args.encoder_ckpt, args.corpus_file, args.k)
     with open(results_file_name, "w") as fp:

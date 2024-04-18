@@ -4,15 +4,16 @@ import time
 import numpy as np
 from pytrec_eval import RelevanceEvaluator
 
+from bret.models import BayesianBERTRetriever
+
 logger = logging.getLogger(__name__)
 
 
 class Evaluator:
-    def __init__(self, model, index, device, method=None, metrics={"ndcg", "map", "recip_rank"}):
+    def __init__(self, model, index, device, metrics={"ndcg", "map", "recip_rank"}):
         self.model = model
         self.index = index
         self.device = device
-        self.method = method
         self.metrics = metrics
 
     def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None):
@@ -29,7 +30,7 @@ class Evaluator:
         run = {}
         for qry_id, qry in qry_data_loader:
             qry = qry.to(self.device)
-            if self.method == "vi":
+            if isinstance(self.model, BayesianBERTRetriever):
                 qry_reps, _ = self.model(qry, None, num_samples)
                 qry_reps = qry_reps.mean(1)
             else:

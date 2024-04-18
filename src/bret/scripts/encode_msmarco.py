@@ -4,7 +4,8 @@ import time
 
 import torch
 
-from bret.data_loaders import make_corpus_data_loader, make_query_data_loader
+from bret.data_loaders import make_corpus_data_loader
+from bret.encoding import encode_corpus
 from bret.file_utils import get_embedding_file_name
 from bret.models import model_factory
 
@@ -43,16 +44,7 @@ def main():
         batch_size=args.batch_size,
         shuffle=False,
     )
-    psg_embs = []
-    for _, psg in corpus_dl:
-        psg = psg.to(device)
-        if args.method == "vi":
-            _, psg_reps = model(None, psg, args.num_samples)
-            psg_reps = psg_reps.mean(1)
-        else:
-            _, psg_reps = model(None, psg)
-        psg_embs.append(psg_reps.detach().cpu())
-    psg_embs = torch.cat(psg_embs, dim=0)
+    psg_embs = encode_corpus(corpus_dl, model, device, args.num_samples)
     torch.save(psg_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, args.corpus_file))
     t_end = time.time()
     logger.info("Encoding the corpus finished in %.2f minutes.", (t_end - t_start) / 60)

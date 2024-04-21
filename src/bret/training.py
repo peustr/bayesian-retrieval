@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 
 import numpy as np
@@ -12,12 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 def make_lr_scheduler_with_warmup(optimizer, training_data, num_epochs, warmup_rate):
-    num_training_steps = math.ceil(len(training_data) / training_data.batch_size) * num_epochs
-    warmup = LinearLR(optimizer, start_factor=0.001, end_factor=1.0, total_iters=int(warmup_rate * num_training_steps))
-    decay = LinearLR(
-        optimizer, start_factor=1.0, end_factor=0.01, total_iters=int((1 - warmup_rate) * num_training_steps)
+    num_training_steps = len(training_data) * num_epochs
+    warmup_iters = int(warmup_rate * num_training_steps)
+    decay_iters = int((1 - warmup_rate) * num_training_steps)
+    warmup = LinearLR(optimizer, start_factor=0.001, end_factor=1.0, total_iters=warmup_iters)
+    decay = LinearLR(optimizer, start_factor=1.0, end_factor=0.01, total_iters=decay_iters)
+    scheduler = SequentialLR(optimizer, [warmup, decay], [warmup_iters])
+    logger.info("Using linear learning rate scheduling with linear warm-up.")
+    logger.info(
+        "Total training steps: %d | LR warm-up for %d steps. | LR decay for %d steps.",
+        num_training_steps,
+        warmup_iters,
+        decay_iters,
     )
-    scheduler = SequentialLR(optimizer, [warmup, decay], [int(warmup_rate * num_training_steps)])
     return scheduler
 
 
@@ -56,7 +62,7 @@ class DPRTrainer:
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
             logger.info("Average training loss: %.2f", avg_training_loss)
-            logger.info("Current learning rate: %.7f", scheduler.get_last_lr())
+            logger.info("Current learning rate: %.7f", scheduler.get_last_lr()[0])
             if avg_training_loss < min_training_loss:
                 torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss

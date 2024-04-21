@@ -3,7 +3,7 @@
 #SBATCH -e ./output/logs/%A.err
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=1
-#SBATCH --time=144:00:00
+#SBATCH --time=72:00:00
 # Set-up the environment.
 source ${HOME}/.bashrc
 # Activate env.
@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
     --method vi \
     --num_train_qry 8 \
     --num_train_psg 8 \
-    --num_epochs 4 \
+    --num_epochs 5 \
     --lr 0.00005 \
     --warmup_rate 0.1 \
     --max_qry_len 32 \

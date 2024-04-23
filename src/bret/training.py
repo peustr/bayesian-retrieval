@@ -108,7 +108,7 @@ class BayesianDPRTrainer(DPRTrainer):
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
             logger.info("Average training loss: %.2f", avg_training_loss_ce)
             logger.info("Average KL divergence: %.2f", avg_training_loss_kld)
-            logger.info("Current learning rate: %.7f", scheduler.get_last_lr())
+            logger.info("Current learning rate: %.7f", scheduler.get_last_lr()[0])
             if avg_training_loss_ce < min_training_loss:
                 torch.save(self.model.state_dict(), ckpt_file_name)
                 min_training_loss = avg_training_loss_ce

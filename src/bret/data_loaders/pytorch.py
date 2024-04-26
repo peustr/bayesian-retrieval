@@ -15,6 +15,16 @@ from bret.data_loaders.preprocessors import (
 logger = logging.getLogger(__name__)
 
 
+def _load_data(data_file):
+    if data_file.endswith(".jsonl"):
+        data = HFDataset.from_json(data_file)
+    elif data_file.endswith(".tsv"):
+        data = HFDataset.from_csv(data_file, delimiter="\t")
+    else:
+        raise NotImplementedError("Data file with format {} not supported.".format(data_file.split(".")[-1]))
+    return data
+
+
 def make_training_data_loader(
     tokenizer,
     data_file,
@@ -24,7 +34,7 @@ def make_training_data_loader(
     num_train_psg=8,
     shuffle=True,
 ):
-    data = HFDataset.from_json(data_file)
+    data = _load_data(data_file)
     tokenized_data = data.map(
         TrainingDataPreProcessor(tokenizer, max_qry_len, max_psg_len),
         batched=False,
@@ -55,7 +65,7 @@ def make_query_data_loader(
     batch_size=32,
     shuffle=True,
 ):
-    data = HFDataset.from_json(data_file)
+    data = _load_data(data_file)
     tokenized_data = data.map(
         TextPreProcessor(tokenizer, max_qry_len),
         batched=False,
@@ -84,7 +94,7 @@ def make_corpus_data_loader(
     batch_size=32,
     shuffle=True,
 ):
-    data = HFDataset.from_json(data_file)
+    data = _load_data(data_file)
     tokenized_data = data.map(
         TextPreProcessor(tokenizer, max_psg_len),
         batched=False,

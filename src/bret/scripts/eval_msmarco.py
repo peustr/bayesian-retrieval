@@ -6,7 +6,11 @@ import torch
 
 from bret.data_loaders import GenericDataLoader, make_query_data_loader
 from bret.evaluation import Evaluator
-from bret.file_utils import get_embedding_file_name, get_results_file_name
+from bret.file_utils import (
+    get_embedding_file_name,
+    get_results_file_name,
+    get_run_file_name,
+)
 from bret.indexing import FaissIndex
 from bret.models import model_factory
 
@@ -29,6 +33,7 @@ def main():
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--k", type=int, default=20)  # k as in: nDCG@k.
     parser.add_argument("--embeddings_dir", default="output/embeddings")
+    parser.add_argument("--run_dir", default="output/runs")
     parser.add_argument("--output_dir", default="output/results")
     args = parser.parse_args()
     logger.info(args.__dict__)
@@ -52,8 +57,11 @@ def main():
     index = FaissIndex.build(
         torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, args.corpus_file))
     )
+    run_file_name = get_run_file_name(args.run_dir, args.encoder_ckpt, args.query_file)
     evaluator = Evaluator(model, index, device, metrics={"ndcg", "map", "recip_rank"})
-    results = evaluator.evaluate_retriever(query_dl, qrels, k=args.k, num_samples=args.num_samples)
+    results = evaluator.evaluate_retriever(
+        query_dl, qrels, k=args.k, num_samples=args.num_samples, run_file=run_file_name
+    )
     results_file_name = get_results_file_name(args.output_dir, args.encoder_ckpt, args.corpus_file, args.k)
     with open(results_file_name, "w") as fp:
         fp.write(json.dumps(results))

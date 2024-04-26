@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 
@@ -16,12 +17,16 @@ class Evaluator:
         self.device = device
         self.metrics = metrics
 
-    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None):
+    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None, run_file=None):
         logger.info("Generating run...")
         t_start = time.time()
         run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples)
         t_end = time.time()
         logger.info("Run generated in %.2f minutes.", (t_end - t_start) / 60)
+        if run_file is not None:
+            with open(run_file, "w", encoding="utf-8") as f:
+                json.dump(run, f)
+            logger.info("Run saved in: %s", run_file)
         logger.info("Calculating metrics...")
         results = self._calculate_metrics(run, qrels, k=k)
         return results
@@ -40,7 +45,7 @@ class Evaluator:
             run[qid] = {}
             for score, psg_id in zip(scores[0], indices[0]):
                 run[qid][str(psg_id)] = float(score)
-            return run
+        return run
 
     def _calculate_metrics(self, run, qrels, k=20):
         evaluator = RelevanceEvaluator(qrels, self.metrics)

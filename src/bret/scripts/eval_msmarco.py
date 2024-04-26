@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--method", default=None, choices=["vi"])
     parser.add_argument("--num_samples", type=int, default=100)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
-    parser.add_argument("--k", type=int, default=20)  # k as in: nDCG@k.
+    parser.add_argument("--k", type=int, default=10)  # k as in: nDCG@k.
     parser.add_argument("--embeddings_dir", default="output/embeddings")
     parser.add_argument("--run_dir", default="output/runs")
     parser.add_argument("--output_dir", default="output/results")

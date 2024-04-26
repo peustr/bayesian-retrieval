@@ -17,7 +17,7 @@ class Evaluator:
         self.device = device
         self.metrics = metrics
 
-    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None, run_file=None):
+    def evaluate_retriever(self, qry_data_loader, qrels, k=10, num_samples=None, run_file=None):
         logger.info("Generating run...")
         t_start = time.time()
         run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples)
@@ -31,7 +31,7 @@ class Evaluator:
         results = self._calculate_metrics(run, qrels, k=k)
         return results
 
-    def _generate_run(self, qry_data_loader, k=20, num_samples=None):
+    def _generate_run(self, qry_data_loader, k=10, num_samples=None):
         run = {}
         for qry_id, qry in qry_data_loader:
             qry = qry.to(self.device)
@@ -47,7 +47,7 @@ class Evaluator:
                 run[qid][str(psg_id)] = float(score)
         return run
 
-    def _calculate_metrics(self, run, qrels, k=20):
+    def _calculate_metrics(self, run, qrels, k=10):
         evaluator = RelevanceEvaluator(qrels, self.metrics)
         results = evaluator.evaluate(run)
         map_at_k = []

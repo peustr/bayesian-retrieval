@@ -19,6 +19,7 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_msmarco.py \
     --method vi \
     --num_samples 10 \
     --max_qry_len 32 \
-    --k 20 \
+    --k 10 \
     --embeddings_dir output/embeddings \
+    --run_dir output/runs \
     --output_dir output/results

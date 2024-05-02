@@ -23,7 +23,7 @@ def get_run_file_name(run_dir, ckpt_file, data_file):
         ckpt_file = ckpt_file.split("/")[-1].split(".")[0]
     if "/" in data_file:
         data_file = data_file.split("/")[-1].split(".")[0]
-    embedding_file_name = "{}-{}.pt".format(ckpt_file, data_file)
+    embedding_file_name = "{}-{}.json".format(ckpt_file, data_file)
     return os.path.join(run_dir, embedding_file_name)
 
 

@@ -22,7 +22,7 @@ def main():
         format="%(asctime)s - %(levelname)s - %(name)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S", level=logging.INFO
     )
     parser = argparse.ArgumentParser()
-    parser.add_argument("--msmarco_dir", default="data/msmarco")
+    parser.add_argument("--dataset_dir", default="data/msmarco")
     parser.add_argument("--split", default="dev", choices=["train", "dev", "test"])
     parser.add_argument("--query_file", default="data/msmarco-dev.jsonl")
     parser.add_argument("--corpus_file", default="data/msmarco-corpus.jsonl")
@@ -53,7 +53,7 @@ def main():
         batch_size=1,
         shuffle=False,
     )
-    qrels = GenericDataLoader(args.msmarco_dir, split=args.split).load_qrels()
+    qrels = GenericDataLoader(args.dataset_dir, split=args.split).load_qrels()
     index = FaissIndex.build(
         torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, args.corpus_file))
     )

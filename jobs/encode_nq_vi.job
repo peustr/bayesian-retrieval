@@ -10,9 +10,10 @@ source ${HOME}/.bashrc
 conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_corpus.py \
-    --corpus_file data/msmarco-corpus.jsonl \
+    --corpus_file data/nq-corpus.jsonl \
     --model_name bert-base \
-    --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --encoder_ckpt output/trained_encoders/bert-base-vi.pt \
+    --method vi \
     --batch_size 32 \
     --max_psg_len 256 \
     --output_dir output/embeddings

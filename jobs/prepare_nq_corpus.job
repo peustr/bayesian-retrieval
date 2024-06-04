@@ -9,6 +9,6 @@ source ${HOME}/.bashrc
 conda activate bret
 
 python src/bret/scripts/prepare_corpus_file.py \
-    --dataset_dir data/msmarco \
-    --split dev \
-    --output_file data/msmarco-corpus.jsonl
+    --dataset_dir data/nq \
+    --split test \
+    --output_file data/nq-corpus.jsonl

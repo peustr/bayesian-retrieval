@@ -9,11 +9,6 @@ source ${HOME}/.bashrc
 conda activate bret
 
 python src/bret/scripts/prepare_query_file.py \
-    --dataset_dir data/msmarco \
-    --split dev \
-    --output_file data/msmarco-dev.jsonl
-
-python src/bret/scripts/prepare_query_file.py \
-    --dataset_dir data/msmarco \
+    --dataset_dir data/nq \
     --split test \
-    --output_file data/msmarco-test.jsonl
+    --output_file data/nq-test.jsonl

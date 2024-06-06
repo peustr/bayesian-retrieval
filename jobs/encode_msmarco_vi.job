@@ -10,7 +10,7 @@ source ${HOME}/.bashrc
 conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_corpus.py \
-    --corpus_file data/msmarco-corpus.jsonl \
+    --dataset_id msmarco \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base-vi.pt \
     --method vi \

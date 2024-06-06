@@ -35,7 +35,7 @@ def main():
     logger.info("Using device: %s", device)
     tokenizer, model = model_factory(args.model_name, args.method, device)
     if args.encoder_ckpt is not None:
-        logger.info("Loading pre-trained weights from checkpoint: %s", args.encoder_ckpt)
+        logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)
         if isinstance(model, BayesianBERTRetriever):
             sdnew = {}

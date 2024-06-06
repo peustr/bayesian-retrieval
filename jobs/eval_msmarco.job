@@ -10,10 +10,8 @@ source ${HOME}/.bashrc
 conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_retriever.py \
-    --dataset_dir data/msmarco \
+    --dataset_id msmarco \
     --split dev \
-    --query_file data/msmarco-dev.jsonl \
-    --corpus_file data/msmarco-corpus.jsonl \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base.pt \
     --max_qry_len 32 \

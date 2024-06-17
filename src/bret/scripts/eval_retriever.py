@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import os
 
 import torch
 
@@ -56,9 +57,14 @@ def main():
     dataset_dir = get_root_dir(args.dataset_id)
     corpus_file = get_corpus_file(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split=args.split).load_qrels()
-    index = FaissIndex.build(torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, corpus_file)))
     run_file_name = get_run_file_name(args.run_dir, args.encoder_ckpt, query_file)
-    evaluator = Evaluator(model, index, device, metrics={"ndcg", "map", "recip_rank"})
+    if os.path.exists(run_file_name) and os.path.isfile(run_file_name):
+        index = None
+    else:
+        index = FaissIndex.build(
+            torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, corpus_file))
+        )
+    evaluator = Evaluator(model, device, index=index, metrics={"ndcg", "map", "recip_rank"})
     results = evaluator.evaluate_retriever(
         query_dl, qrels, k=args.k, num_samples=args.num_samples, run_file=run_file_name
     )

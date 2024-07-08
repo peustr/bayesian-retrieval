@@ -1,10 +1,11 @@
 import argparse
 import logging
+import os
 import time
 
 import torch
 
-from bret.data_loaders import make_corpus_data_loader
+from bret.data_loaders import CorpusDataLoader
 from bret.data_utils import get_corpus_file
 from bret.encoding import encode_corpus
 from bret.file_utils import get_embedding_file_name
@@ -32,14 +33,15 @@ def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     logger.info("Using device: %s", device)
     tokenizer, model = model_factory(args.model_name, args.method, device)
-    logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
-    model.load_state_dict(torch.load(args.encoder_ckpt))
+    if os.path.exists(args.encoder_ckpt) and os.path.isfile(args.encoder_ckpt):
+        logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
+        model.load_state_dict(torch.load(args.encoder_ckpt))
     model.eval()
 
     corpus_file = get_corpus_file(args.dataset_id)
     logger.info(f"Encoding the corpus in: %s", corpus_file)
     t_start = time.time()
-    corpus_dl = make_corpus_data_loader(
+    corpus_dl = CorpusDataLoader(
         tokenizer,
         corpus_file,
         max_psg_len=args.max_psg_len,

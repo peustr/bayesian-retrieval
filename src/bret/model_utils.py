@@ -4,6 +4,7 @@ _model_registry = {
     "bert-small": "google/bert_uncased_L-4_H-512_A-8",
     "bert-medium": "google/bert_uncased_L-8_H-512_A-8",
     "bert-base": "google/bert_uncased_L-12_H-768_A-12",
+    "st-bert-base": "sentence-transformers/msmarco-bert-base-dot-v5",
 }
 
 

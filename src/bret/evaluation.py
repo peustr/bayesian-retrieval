@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class Evaluator:
-    def __init__(self, model, device, index=None, metrics={"ndcg", "map", "recip_rank"}):
+    def __init__(self, model, device, index=None, metrics={"ndcg", "recip_rank"}):
         self.model = model
         self.device = device
         self.index = index
         self.metrics = metrics
 
-    def evaluate_retriever(self, qry_data_loader, qrels, k=10, num_samples=None, run_file=None):
-        if os.path.exists(run_file) and os.path.isfile(run_file):
+    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None, run_file=None):
+        if run_file is not None and os.path.exists(run_file) and os.path.isfile(run_file):
             logger.info("Loading run from: %s", run_file)
             with open(run_file, "r", encoding="utf-8") as f:
                 run = json.loads(f.read())
@@ -37,7 +37,7 @@ class Evaluator:
         results = self._calculate_metrics(run, qrels, k=k)
         return results
 
-    def _generate_run(self, qry_data_loader, k=10, num_samples=None):
+    def _generate_run(self, qry_data_loader, k=20, num_samples=None):
         run = {}
         for qry_id, qry in qry_data_loader:
             qry = qry.to(self.device)
@@ -53,20 +53,17 @@ class Evaluator:
                 run[qid][str(psg_id)] = float(score)
         return run
 
-    def _calculate_metrics(self, run, qrels, k=10):
+    def _calculate_metrics(self, run, qrels, k=20):
         evaluator = RelevanceEvaluator(qrels, self.metrics)
         results = evaluator.evaluate(run)
-        map_at_k = []
-        mrr_at_k = []
         ndcg_at_k = []
+        mrr_at_k = []
         for _, metrics in results.items():
-            map_at_k.append(metrics["map"])
-            mrr_at_k.append(metrics["recip_rank"])
             ndcg_at_k.append(metrics["ndcg"])
+            mrr_at_k.append(metrics["recip_rank"])
         results_agg = {
-            "MAP@{}".format(k): float(np.mean(map_at_k)),
-            "MRR@{}".format(k): float(np.mean(mrr_at_k)),
             "nDCG@{}".format(k): float(np.mean(ndcg_at_k)),
+            "MRR@{}".format(k): float(np.mean(mrr_at_k)),
         }
         logger.info(results_agg)
         return results_agg

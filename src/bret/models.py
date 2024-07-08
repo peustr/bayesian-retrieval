@@ -1,5 +1,6 @@
 import logging
 
+import torch
 import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer
 
@@ -19,6 +20,12 @@ def model_factory(model_name, method, device):
     return tokenizer, model
 
 
+def mean_pooling(model_output, attention_mask):
+    token_embeddings = model_output.last_hidden_state
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+
 class BERTRetriever(nn.Module):
     def __init__(self, backbone, device="cpu"):
         super().__init__()
@@ -34,7 +41,8 @@ class BERTRetriever(nn.Module):
         if qry_or_psg is None:
             return None
         out = self.backbone(**qry_or_psg, return_dict=True)
-        return out.last_hidden_state[:, 0]
+        embeddings = mean_pooling(out, qry_or_psg["attention_mask"])
+        return embeddings
 
     @classmethod
     def build(cls, model_name, device="cpu", **hf_kwargs):

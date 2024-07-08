@@ -3,7 +3,13 @@ import logging
 
 import torch
 
-from bret.data_loaders import make_training_data_loader
+from bret.data_loaders import (
+    CorpusDataLoader,
+    GenericDataLoader,
+    QueryDataLoader,
+    TrainingDataLoader,
+)
+from bret.data_utils import get_corpus_file, get_query_file, get_root_dir
 from bret.file_utils import get_checkpoint_file_name
 from bret.models import BayesianBERTRetriever, model_factory
 from bret.training import BayesianDPRTrainer, DPRTrainer
@@ -16,12 +22,12 @@ def main():
         format="%(asctime)s - %(levelname)s - %(name)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S", level=logging.INFO
     )
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_id", choices=["msmarco"])
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--method", default=None, choices=["vi"])
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
-    parser.add_argument("--num_train_qry", type=int, default=8)
-    parser.add_argument("--num_train_psg", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--num_epochs", type=int, default=4)
     parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument("--warmup_rate", type=float, default=0.1)
@@ -47,20 +53,37 @@ def main():
             model.load_state_dict(sd)
     model.train()
 
-    train_dl = make_training_data_loader(
+    train_dl = TrainingDataLoader(
         tokenizer,
         args.training_data_file,
         max_qry_len=args.max_qry_len,
         max_psg_len=args.max_psg_len,
-        num_train_qry=args.num_train_qry,
-        num_train_psg=args.num_train_psg,
+        batch_size=args.batch_size,
         shuffle=True,
     )
+    query_file = get_query_file(args.dataset_id, split="val")
+    val_query_dl = QueryDataLoader(
+        tokenizer,
+        query_file,
+        max_qry_len=args.max_qry_len,
+        batch_size=1,
+        shuffle=False,
+    )
+    corpus_file = "data/msmarco-corpus-val.jsonl"
+    val_corpus_dl = CorpusDataLoader(
+        tokenizer,
+        corpus_file,
+        max_psg_len=args.max_psg_len,
+        batch_size=args.batch_size,
+        shuffle=False,
+    )
+    dataset_dir = get_root_dir(args.dataset_id)
+    qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
     if isinstance(model, BayesianBERTRetriever):
-        trainer = BayesianDPRTrainer(model, train_dl, device)
+        trainer = BayesianDPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     else:
-        trainer = DPRTrainer(model, train_dl, device)
+        trainer = DPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     trainer.train(num_epochs=args.num_epochs, lr=args.lr, warmup_rate=args.warmup_rate, ckpt_file_name=ckpt_file_name)
     logger.info("Training finished after %d epochs.", args.num_epochs)
 

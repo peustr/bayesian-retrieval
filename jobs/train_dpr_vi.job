@@ -10,12 +10,12 @@ source ${HOME}/.bashrc
 conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
+    --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base.pt \
     --method vi \
-    --num_train_qry 8 \
-    --num_train_psg 8 \
+    --batch_size 16 \
     --num_epochs 5 \
     --lr 0.00005 \
     --warmup_rate 0.1 \

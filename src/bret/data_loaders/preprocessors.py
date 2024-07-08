@@ -1,6 +1,3 @@
-import random
-
-from torch.utils.data import Dataset as PyTorchDataset
 from transformers import DataCollatorWithPadding
 
 
@@ -35,78 +32,6 @@ class TrainingDataPreProcessor:
                 self.tokenizer.encode(neg, add_special_tokens=False, max_length=self.max_psg_len, truncation=True)
             )
         return {"query": query, "pos": positives, "neg": negatives}
-
-
-class TextDataset(PyTorchDataset):
-    def __init__(self, tokenizer, data, max_len):
-        self.tokenizer = tokenizer
-        self.data = data
-        self.max_len = max_len
-        self._num_samples = len(self.data)
-
-    def create_one_example(self, text_encoding):
-        item = self.tokenizer.prepare_for_model(
-            text_encoding,
-            truncation="only_first",
-            max_length=self.max_len,
-            padding=False,
-            return_attention_mask=False,
-            return_token_type_ids=False,
-        )
-        return item
-
-    def __len__(self):
-        return self._num_samples
-
-    def __getitem__(self, idx):
-        group = self.data[idx]
-        text_id = group["id"]
-        text = group["text"]
-        encoded_text = self.create_one_example(text)
-        return text_id, encoded_text
-
-
-class TrainingDataset(PyTorchDataset):
-    def __init__(self, tokenizer, data, max_qry_len=32, max_psg_len=256, num_train_psg=8):
-        self.tokenizer = tokenizer
-        self.data = data
-        self.max_qry_len = max_qry_len
-        self.max_psg_len = max_psg_len
-        self.num_train_psg = num_train_psg
-        self._num_samples = len(self.data)
-
-    def create_one_example(self, text_encoding, is_query=False):
-        item = self.tokenizer.prepare_for_model(
-            text_encoding,
-            truncation="only_first",
-            max_length=self.max_qry_len if is_query else self.max_psg_len,
-            padding=False,
-            return_attention_mask=False,
-            return_token_type_ids=False,
-        )
-        return item
-
-    def __len__(self):
-        return self._num_samples
-
-    def __getitem__(self, idx):
-        group = self.data[idx]
-        qry = group["query"]
-        encoded_query = self.create_one_example(qry, is_query=True)
-        encoded_passages = []
-        positives = group["pos"]
-        negatives = group["neg"]
-        pos_psg = positives[random.randint(0, len(positives) - 1)]
-        encoded_passages.append(self.create_one_example(pos_psg))
-        num_negatives = self.num_train_psg - 1
-        if len(negatives) < num_negatives:
-            neg_psgs = random.choices(negatives, k=num_negatives)
-        else:
-            random.shuffle(negatives)
-            neg_psgs = negatives[:num_negatives]
-        for neg_psg in neg_psgs:
-            encoded_passages.append(self.create_one_example(neg_psg))
-        return encoded_query, encoded_passages
 
 
 class TextCollator(DataCollatorWithPadding):

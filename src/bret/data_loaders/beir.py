@@ -72,7 +72,7 @@ class GenericDataLoader:
     def _load_qrels(self):
         reader = csv.reader(open(self.qrels_file, encoding="utf-8"), delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         next(reader)
-        for id, row in enumerate(reader):
+        for _, row in enumerate(reader):
             query_id, corpus_id, score = row[0], row[1], int(row[2])
             if query_id not in self.qrels:
                 self.qrels[query_id] = {corpus_id: score}

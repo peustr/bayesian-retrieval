@@ -1,11 +1,14 @@
 import logging
 import time
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LinearLR, SequentialLR
+
+from bret.encoding import encode_corpus
+from bret.evaluation import Evaluator
+from bret.indexing import FaissIndex
 
 logger = logging.getLogger(__name__)
 
@@ -28,22 +31,24 @@ def make_lr_scheduler_with_warmup(optimizer, training_data, num_epochs, warmup_r
 
 
 class DPRTrainer:
-    def __init__(self, model, training_data, device):
+    def __init__(self, model, training_data, validation_queries, validation_corpus, qrels, device):
         self.model = model
         self.training_data = training_data
+        self.validation_queries = validation_queries
+        self.validation_corpus = validation_corpus
+        self.qrels = qrels
         self.device = device
 
-    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None):
+    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20):
         optimizer = Adam(self.model.parameters(), lr=lr)
         scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
-            min_training_loss = 1e5
+            max_ndcg_at_k = 0.0
         else:
-            min_training_loss = -1.0
+            max_ndcg_at_k = 1.0
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
-            training_losses = []
             for qry, psg in self.training_data:
                 qry = qry.to(self.device)
                 psg = psg.to(self.device)
@@ -57,34 +62,44 @@ class DPRTrainer:
                 loss.backward()
                 optimizer.step()
                 scheduler.step()
-                training_losses.append(loss.item())
-            avg_training_loss = np.mean(training_losses)
+            metrics = self._compute_validation_metrics(k=k)
+            ndcg_at_k = metrics["nDCG@" + str(k)]
+            mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
-            logger.info("Average training loss: %.2f", avg_training_loss)
-            logger.info("Current learning rate: %.7f", scheduler.get_last_lr()[0])
-            if avg_training_loss < min_training_loss:
+            logger.info("Validation metrics: nDCG@%d=%.3f | MRR@%d=%.3f", k, ndcg_at_k, k, mrr_at_k)
+            if ndcg_at_k > max_ndcg_at_k:
                 torch.save(self.model.state_dict(), ckpt_file_name)
-                min_training_loss = avg_training_loss
+                max_ndcg_at_k = ndcg_at_k
                 logger.info("Model saved in: %s", ckpt_file_name)
+
+    def _compute_validation_metrics(self, k=20, **kwargs):
+        self.model.eval()
+        psg_embs = encode_corpus(self.validation_corpus, self.model, self.device, **kwargs)
+        index = FaissIndex.build(psg_embs)
+        evaluator = Evaluator(
+            self.model,
+            self.device,
+            index=index,
+            metrics={"ndcg", "recip_rank"},
+        )
+        return evaluator.evaluate_retriever(self.validation_queries, self.qrels, k=k, **kwargs)
 
 
 class BayesianDPRTrainer(DPRTrainer):
-    def __init__(self, model, training_data, device):
-        super().__init__(model, training_data, device)
+    def __init__(self, model, training_data, validation_queries, validation_corpus, qrels, device):
+        super().__init__(model, training_data, validation_queries, validation_corpus, qrels, device)
 
-    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None):
+    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20, num_samples=10):
         optimizer = Adam(self.model.parameters(), lr=lr)
         scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
-            min_training_loss = 1e5
+            max_ndcg_at_k = 0.0
         else:
-            min_training_loss = -1.0
+            max_ndcg_at_k = 1.0
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
-            training_losses_ce = []
-            training_losses_kld = []
             for qry, psg in self.training_data:
                 qry = qry.to(self.device)
                 psg = psg.to(self.device)
@@ -100,16 +115,13 @@ class BayesianDPRTrainer(DPRTrainer):
                 loss.backward()
                 optimizer.step()
                 scheduler.step()
-                training_losses_ce.append(loss_ce.item())
-                training_losses_kld.append(loss_kld.item())
-            avg_training_loss_ce = np.mean(training_losses_ce)
-            avg_training_loss_kld = np.mean(training_losses_kld)
+            metrics = self._compute_validation_metrics(k=k, num_samples=num_samples)
+            ndcg_at_k = metrics["nDCG@" + str(k)]
+            mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
-            logger.info("Average training loss: %.2f", avg_training_loss_ce)
-            logger.info("Average KL divergence: %.2f", avg_training_loss_kld)
-            logger.info("Current learning rate: %.7f", scheduler.get_last_lr()[0])
-            if avg_training_loss_ce < min_training_loss:
+            logger.info("Validation metrics: nDCG@%d=%.3f | MRR@%d=%.3f", k, ndcg_at_k, k, mrr_at_k)
+            if ndcg_at_k > max_ndcg_at_k:
                 torch.save(self.model.state_dict(), ckpt_file_name)
-                min_training_loss = avg_training_loss_ce
+                max_ndcg_at_k = ndcg_at_k
                 logger.info("Model saved in: %s", ckpt_file_name)

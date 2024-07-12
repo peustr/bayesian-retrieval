@@ -6,9 +6,14 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LinearLR, SequentialLR
 
-from bret.encoding import encode_corpus
+from bret.encoding import (
+    encode_corpus,
+    encode_passage_multivariate,
+    encode_query_multivariate,
+)
 from bret.evaluation import Evaluator
 from bret.indexing import FaissIndex
+from bret.relevance import dot_product_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +59,7 @@ class DPRTrainer:
                 psg = psg.to(self.device)
                 optimizer.zero_grad()
                 qry_reps, psg_reps = self.model(qry, psg)
-                scores = qry_reps @ psg_reps.T
+                scores = dot_product_similarity(qry_reps, psg_reps)
                 targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
                     psg_reps.size(0) // qry_reps.size(0)
                 )
@@ -105,7 +110,9 @@ class BayesianDPRTrainer(DPRTrainer):
                 psg = psg.to(self.device)
                 optimizer.zero_grad()
                 qry_reps, psg_reps = self.model(qry, psg)
-                scores = qry_reps.mean(dim=1) @ psg_reps.mean(dim=1).T  # Averaging across num_samples.
+                qry_reps = encode_query_multivariate(qry_reps)
+                psg_reps = encode_passage_multivariate(psg_reps)
+                scores = dot_product_similarity(qry_reps, psg_reps)
                 targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
                     psg_reps.size(0) // qry_reps.size(0)
                 )

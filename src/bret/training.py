@@ -44,7 +44,7 @@ class DPRTrainer:
         self.qrels = qrels
         self.device = device
 
-    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20):
+    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20, **kwargs):
         optimizer = Adam(self.model.parameters(), lr=lr)
         scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
@@ -109,7 +109,7 @@ class BayesianDPRTrainer(DPRTrainer):
                 qry = qry.to(self.device)
                 psg = psg.to(self.device)
                 optimizer.zero_grad()
-                qry_reps, psg_reps = self.model(qry, psg)
+                qry_reps, psg_reps = self.model(qry, psg, num_samples=num_samples)
                 qry_reps = encode_query_multivariate(qry_reps)
                 psg_reps = encode_passage_multivariate(psg_reps)
                 scores = dot_product_similarity(qry_reps, psg_reps)

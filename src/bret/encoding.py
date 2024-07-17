@@ -38,7 +38,7 @@ def encode_corpus(corpus_data, encoder, device, num_samples=None):
     for _, psg in corpus_data:
         psg = psg.to(device)
         if isinstance(encoder, BayesianBERTRetriever):
-            _, psg_reps = encoder(None, psg, num_samples)
+            _, psg_reps = encoder(None, psg, num_samples=num_samples)
             psg_reps = encode_passage_multivariate(psg_reps)
         else:
             _, psg_reps = encoder(None, psg)

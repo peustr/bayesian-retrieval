@@ -26,6 +26,7 @@ def main():
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--num_epochs", type=int, default=4)
@@ -84,7 +85,13 @@ def main():
         trainer = BayesianDPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     else:
         trainer = DPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
-    trainer.train(num_epochs=args.num_epochs, lr=args.lr, warmup_rate=args.warmup_rate, ckpt_file_name=ckpt_file_name)
+    trainer.train(
+        num_epochs=args.num_epochs,
+        lr=args.lr,
+        warmup_rate=args.warmup_rate,
+        ckpt_file_name=ckpt_file_name,
+        num_samples=args.num_samples,
+    )
     logger.info("Training finished after %d epochs.", args.num_epochs)
 
 

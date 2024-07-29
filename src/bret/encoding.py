@@ -3,6 +3,11 @@ import torch
 from bret.models import BayesianBERTRetriever
 
 
+def encode_query_mean(qry_reps):
+    qry_mean = qry_reps.mean(dim=1)
+    return qry_mean
+
+
 def encode_query_multivariate(qry_reps):
     qry_mean = qry_reps.mean(dim=1)
     qry_var = qry_reps.var(dim=1)
@@ -33,13 +38,18 @@ def encode_passage_multivariate(psg_reps):
     return rep
 
 
+def encode_passage_mean(psg_reps):
+    psg_mean = psg_reps.mean(dim=1)
+    return psg_mean
+
+
 def encode_corpus(corpus_data, encoder, device, num_samples=None):
     psg_embs = []
     for _, psg in corpus_data:
         psg = psg.to(device)
         if isinstance(encoder, BayesianBERTRetriever):
             _, psg_reps = encoder(None, psg, num_samples=num_samples)
-            psg_reps = encode_passage_multivariate(psg_reps)
+            psg_reps = encode_passage_mean(psg_reps)
         else:
             _, psg_reps = encoder(None, psg)
         psg_embs.append(psg_reps.detach().cpu())

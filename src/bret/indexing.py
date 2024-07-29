@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_numpy(rep):
-    if type(rep) == torch.Tensor:
+    if isinstance(rep, torch.Tensor):
         return rep.detach().cpu().numpy()
     return rep
 

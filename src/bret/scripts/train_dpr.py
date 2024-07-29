@@ -9,7 +9,7 @@ from bret.data_loaders import (
     QueryDataLoader,
     TrainingDataLoader,
 )
-from bret.data_utils import get_corpus_file, get_query_file, get_root_dir
+from bret.data_utils import get_query_file, get_root_dir
 from bret.file_utils import get_checkpoint_file_name
 from bret.models import BayesianBERTRetriever, model_factory
 from bret.training import BayesianDPRTrainer, DPRTrainer

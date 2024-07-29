@@ -5,7 +5,7 @@ import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer
 
 from bret.layers.linear import BayesianLinear
-from bret.model_utils import get_hf_model_id
+from bret.model_utils import disable_grad, get_hf_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ class BERTRetriever(nn.Module):
         super().__init__()
         self.backbone = backbone
         self.to(device)
+        # disable_grad(self.backbone.embeddings)
 
     def forward(self, query=None, passage=None):
         qry_reps = self._encode(query)
@@ -76,7 +77,7 @@ class BayesianBERTRetriever(BERTRetriever):
     def kl(self):
         sum_kld = None
         for _, m in self.backbone.named_modules():
-            if type(m) == BayesianLinear:
+            if isinstance(m, BayesianLinear):
                 if sum_kld is None:
                     sum_kld = m.kl()
                 else:

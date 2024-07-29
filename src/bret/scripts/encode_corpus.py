@@ -39,7 +39,7 @@ def main():
     model.eval()
 
     corpus_file = get_corpus_file(args.dataset_id)
-    logger.info(f"Encoding the corpus in: %s", corpus_file)
+    logger.info("Encoding the corpus in: %s", corpus_file)
     t_start = time.time()
     corpus_dl = CorpusDataLoader(
         tokenizer,

@@ -43,7 +43,9 @@ class DPRTrainer:
         self.device = device
 
     def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, **kwargs):
-        optimizer, scheduler = make_lr_scheduler_with_warmup(self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate)
+        optimizer, scheduler = make_lr_scheduler_with_warmup(
+            self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate
+        )
         if ckpt_file_name is not None:
             max_ndcg_at_k = 0.0
         else:
@@ -93,7 +95,9 @@ class BayesianDPRTrainer(DPRTrainer):
         super().__init__(model, training_data, validation_queries, validation_corpus, qrels, device)
 
     def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, num_samples=10):
-        optimizer, scheduler = make_lr_scheduler_with_warmup(self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate)
+        optimizer, scheduler = make_lr_scheduler_with_warmup(
+            self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate
+        )
         if ckpt_file_name is not None:
             max_ndcg_at_k = 0.0
         else:

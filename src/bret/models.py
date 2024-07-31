@@ -31,7 +31,6 @@ class BERTRetriever(nn.Module):
         super().__init__()
         self.backbone = backbone
         self.to(device)
-        # disable_grad(self.backbone.embeddings)
 
     def forward(self, query=None, passage=None):
         qry_reps = self._encode(query)

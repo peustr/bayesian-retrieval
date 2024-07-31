@@ -14,12 +14,14 @@ from bret.relevance import dot_product_similarity
 logger = logging.getLogger(__name__)
 
 
-def make_lr_scheduler_with_warmup(optimizer, training_data, num_epochs, warmup_rate):
+def make_lr_scheduler_with_warmup(model, training_data, lr, min_lr, num_epochs, warmup_rate):
+    optimizer = Adam(model.parameters(), lr=lr)
     num_training_steps = len(training_data) * num_epochs
     warmup_iters = int(warmup_rate * num_training_steps)
     decay_iters = int((1 - warmup_rate) * num_training_steps)
-    warmup = LinearLR(optimizer, start_factor=0.001, end_factor=1.0, total_iters=warmup_iters)
-    decay = LinearLR(optimizer, start_factor=1.0, end_factor=0.01, total_iters=decay_iters)
+    decay_factor = min_lr / lr
+    warmup = LinearLR(optimizer, start_factor=decay_factor, end_factor=1.0, total_iters=warmup_iters)
+    decay = LinearLR(optimizer, start_factor=1.0, end_factor=decay_factor, total_iters=decay_iters)
     scheduler = SequentialLR(optimizer, [warmup, decay], [warmup_iters])
     logger.info("Using linear learning rate scheduling with linear warm-up.")
     logger.info(
@@ -28,7 +30,7 @@ def make_lr_scheduler_with_warmup(optimizer, training_data, num_epochs, warmup_r
         warmup_iters,
         decay_iters,
     )
-    return scheduler
+    return optimizer, scheduler
 
 
 class DPRTrainer:
@@ -40,9 +42,8 @@ class DPRTrainer:
         self.qrels = qrels
         self.device = device
 
-    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20, **kwargs):
-        optimizer = Adam(self.model.parameters(), lr=lr)
-        scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
+    def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, **kwargs):
+        optimizer, scheduler = make_lr_scheduler_with_warmup(self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
             max_ndcg_at_k = 0.0
         else:
@@ -91,9 +92,8 @@ class BayesianDPRTrainer(DPRTrainer):
     def __init__(self, model, training_data, validation_queries, validation_corpus, qrels, device):
         super().__init__(model, training_data, validation_queries, validation_corpus, qrels, device)
 
-    def train(self, num_epochs=4, lr=5e-5, warmup_rate=0.1, ckpt_file_name=None, k=20, num_samples=10):
-        optimizer = Adam(self.model.parameters(), lr=lr)
-        scheduler = make_lr_scheduler_with_warmup(optimizer, self.training_data, num_epochs, warmup_rate)
+    def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, num_samples=10):
+        optimizer, scheduler = make_lr_scheduler_with_warmup(self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate)
         if ckpt_file_name is not None:
             max_ndcg_at_k = 0.0
         else:

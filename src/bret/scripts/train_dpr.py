@@ -30,7 +30,8 @@ def main():
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--num_epochs", type=int, default=4)
-    parser.add_argument("--lr", type=float, default=5e-5)
+    parser.add_argument("--lr", type=float, default=5e-6)
+    parser.add_argument("--min_lr", type=float, default=5e-8)
     parser.add_argument("--warmup_rate", type=float, default=0.1)
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
@@ -88,6 +89,7 @@ def main():
     trainer.train(
         num_epochs=args.num_epochs,
         lr=args.lr,
+        min_lr=args.min_lr,
         warmup_rate=args.warmup_rate,
         ckpt_file_name=ckpt_file_name,
         num_samples=args.num_samples,

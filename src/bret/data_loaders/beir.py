@@ -26,10 +26,14 @@ class GenericDataLoader:
     def load(self):
         self.check(self.corpus_file, "jsonl")
         self.check(self.query_file, "jsonl")
+        self.check(self.qrels_file, "tsv")
         if len(self.corpus.keys()) == 0:
             self._load_corpus()
         if len(self.queries.keys()) == 0:
-            self._load_queries()  # Also loads qrels.
+            self._load_queries()
+        if os.path.exists(self.qrels_file):
+            self._load_qrels()
+            self.queries = {qid: self.queries[qid] for qid in self.qrels}
         return self.corpus, self.queries, self.qrels
 
     def load_corpus(self):
@@ -42,10 +46,6 @@ class GenericDataLoader:
         self.check(self.query_file, "jsonl")
         if len(self.queries.keys()) == 0:
             self._load_queries()
-        if os.path.exists(self.qrels_file):
-            self.check(self.qrels_file, "tsv")
-            self._load_qrels()
-            self.queries = {qid: self.queries[qid] for qid in self.qrels}
         return self.queries
 
     def load_qrels(self):

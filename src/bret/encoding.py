@@ -43,9 +43,23 @@ def encode_passage_mean(psg_reps):
     return psg_mean
 
 
-def encode_corpus(corpus_data, encoder, device, num_samples=None):
+def encode_queries(queries, encoder, device, num_samples=None):
+    qry_embs = []
+    for _, qry in queries:
+        qry = qry.to(device)
+        if isinstance(encoder, BayesianBERTRetriever):
+            qry_reps, _ = encoder(qry, None, num_samples=num_samples)
+            qry_reps = encode_query_mean(qry_reps)
+        else:
+            qry_reps, _ = encoder(qry, None)
+        qry_embs.append(qry_reps.detach().cpu())
+    qry_embs = torch.cat(qry_embs, dim=0)
+    return qry_embs
+
+
+def encode_corpus(corpus, encoder, device, num_samples=None):
     psg_embs = []
-    for _, psg in corpus_data:
+    for _, psg in corpus:
         psg = psg.to(device)
         if isinstance(encoder, BayesianBERTRetriever):
             _, psg_reps = encoder(None, psg, num_samples=num_samples)

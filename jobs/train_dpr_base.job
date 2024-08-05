@@ -12,11 +12,8 @@ conda activate bret
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
     --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
-    --model_name bert-medium \
-    --encoder_ckpt output/trained_encoders/bert-medium.pt \
-    --method vi \
-    --num_samples 10 \
-    --batch_size 4 \
+    --model_name bert-base \
+    --batch_size 16 \
     --num_epochs 8 \
     --lr 0.000005 \
     --min_lr 0.00000005 \

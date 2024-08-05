@@ -10,18 +10,22 @@ source ${HOME}/.bashrc
 conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_corpus.py \
-    --dataset_id msmarco \
-    --model_name bert-base \
-    --encoder_ckpt output/trained_encoders/bert-base.pt \
-    --batch_size 32 \
+    --dataset_id nq \
+    --model_name bert-medium \
+    --encoder_ckpt output/trained_encoders/bert-medium-vi.pt \
+    --method vi \
+    --batch_size 4 \
+    --num_samples 30 \
     --max_psg_len 256 \
     --output_dir output/embeddings
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_retriever.py \
-    --dataset_id msmarco \
-    --split dev \
-    --model_name bert-base \
-    --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --dataset_id nq \
+    --split test \
+    --model_name bert-medium \
+    --encoder_ckpt output/trained_encoders/bert-medium-vi.pt \
+    --method vi \
+    --num_samples 30 \
     --max_qry_len 32 \
     --k 20 \
     --embeddings_dir output/embeddings \

@@ -13,7 +13,9 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_corpus.py \
     --dataset_id nq \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --method dpr \
     --batch_size 32 \
+    --num_samples 1 \
     --max_psg_len 256 \
     --output_dir output/embeddings
 
@@ -22,6 +24,8 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_retriever.py \
     --split test \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --method dpr \
+    --num_samples 1 \
     --max_qry_len 32 \
     --k 20 \
     --embeddings_dir output/embeddings \

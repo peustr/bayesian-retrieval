@@ -13,8 +13,10 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
     --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
     --model_name bert-base \
+    --method dpr \
+    --num_samples 1 \
     --batch_size 16 \
-    --num_epochs 8 \
+    --num_epochs 4 \
     --lr 0.000005 \
     --min_lr 0.00000005 \
     --warmup_rate 0.1 \

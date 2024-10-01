@@ -1,6 +1,6 @@
 import torch
 
-from bret.models import BayesianBERTRetriever
+from bret.models.bayesian import BayesianRetriever
 
 
 def encode_query_mean(qry_reps):
@@ -47,7 +47,7 @@ def encode_queries(queries, encoder, device, num_samples=None):
     qry_embs = []
     for _, qry in queries:
         qry = qry.to(device)
-        if isinstance(encoder, BayesianBERTRetriever):
+        if isinstance(encoder, BayesianRetriever):
             qry_reps, _ = encoder(qry, None, num_samples=num_samples)
             qry_reps = encode_query_mean(qry_reps)
         else:
@@ -61,7 +61,7 @@ def encode_corpus(corpus, encoder, device, num_samples=None):
     psg_embs = []
     for _, psg in corpus:
         psg = psg.to(device)
-        if isinstance(encoder, BayesianBERTRetriever):
+        if isinstance(encoder, BayesianRetriever):
             _, psg_reps = encoder(None, psg, num_samples=num_samples)
             psg_reps = encode_passage_mean(psg_reps)
         else:

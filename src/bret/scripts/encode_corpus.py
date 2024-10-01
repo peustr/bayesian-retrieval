@@ -6,10 +6,9 @@ import time
 import torch
 
 from bret.data_loaders import CorpusDataLoader
-from bret.data_utils import get_corpus_file
 from bret.encoding import encode_corpus
-from bret.file_utils import get_embedding_file_name
 from bret.models import model_factory
+from bret.utils import get_corpus_file, get_embedding_file_name
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco", "nq"])
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
-    parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_samples", type=int, default=30)  # Only for variational inference.
     parser.add_argument("--max_psg_len", type=int, default=256)

@@ -9,10 +9,10 @@ from bret.data_loaders import (
     QueryDataLoader,
     TrainingDataLoader,
 )
-from bret.data_utils import get_query_file, get_root_dir
-from bret.file_utils import get_checkpoint_file_name
 from bret.models import BayesianBERTRetriever, model_factory
+from bret.models.bayesian import BayesianRetriever
 from bret.training import BayesianDPRTrainer, DPRTrainer
+from bret.utils import get_checkpoint_file_name, get_query_file, get_root_dir
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco"])
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
-    parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
     parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
@@ -45,7 +45,7 @@ def main():
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)
-        if isinstance(model, BayesianBERTRetriever):
+        if isinstance(model, BayesianRetriever):
             sdnew = {}
             for k, v in sd.items():
                 if k.endswith(".weight"):
@@ -82,7 +82,7 @@ def main():
     dataset_dir = get_root_dir(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
-    if isinstance(model, BayesianBERTRetriever):
+    if isinstance(model, BayesianRetriever):
         trainer = BayesianDPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     else:
         trainer = DPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)

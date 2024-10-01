@@ -7,7 +7,7 @@ import numpy as np
 from pytrec_eval import RelevanceEvaluator
 
 from bret.encoding import encode_query_mean
-from bret.models import BayesianBERTRetriever
+from bret.models.bayesian import BayesianRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Evaluator:
         run = {}
         for qry_id, qry in qry_data_loader:
             qry = qry.to(self.device)
-            if isinstance(self.model, BayesianBERTRetriever):
+            if isinstance(self.model, BayesianRetriever):
                 qry_reps, _ = self.model(qry, None, num_samples=num_samples)
                 qry_reps = encode_query_mean(qry_reps)
             else:

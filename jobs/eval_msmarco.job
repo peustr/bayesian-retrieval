@@ -11,17 +11,21 @@ conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_corpus.py \
     --dataset_id msmarco \
-    --model_name bert-base \
-    --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --model_name distilbert-base-msmarco-tasb \
+    --encoder_ckpt output/trained_encoders/distilbert-base-msmarco-tasb.pt \
+    --method dpr \
     --batch_size 32 \
+    --num_samples 1 \
     --max_psg_len 256 \
     --output_dir output/embeddings
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/eval_retriever.py \
     --dataset_id msmarco \
     --split dev \
-    --model_name bert-base \
-    --encoder_ckpt output/trained_encoders/bert-base.pt \
+    --model_name distilbert-base-msmarco-tasb \
+    --encoder_ckpt output/trained_encoders/distilbert-base-msmarco-tasb.pt \
+    --method dpr \
+    --num_samples 1 \
     --max_qry_len 32 \
     --k 20 \
     --embeddings_dir output/embeddings \

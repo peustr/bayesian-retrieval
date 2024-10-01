@@ -6,15 +6,17 @@ import os
 import torch
 
 from bret.data_loaders import GenericDataLoader, QueryDataLoader
-from bret.data_utils import get_corpus_file, get_query_file, get_root_dir
 from bret.evaluation import Evaluator
-from bret.file_utils import (
-    get_embedding_file_name,
-    get_results_file_name,
-    get_run_file_name,
-)
 from bret.indexing import FaissIndex
 from bret.models import model_factory
+from bret.utils import (
+    get_corpus_file,
+    get_embedding_file_name,
+    get_query_file,
+    get_results_file_name,
+    get_root_dir,
+    get_run_file_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ def main():
     parser.add_argument("--split", default="dev", choices=["dev", "test", "val"])
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
-    parser.add_argument("--method", default=None, choices=["vi"])
+    parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
     parser.add_argument("--num_samples", type=int, default=100)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--k", type=int, default=10)  # k as in: nDCG@k.

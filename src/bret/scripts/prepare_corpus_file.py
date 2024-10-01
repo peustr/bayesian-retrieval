@@ -4,7 +4,7 @@ import json
 from tqdm.autonotebook import tqdm
 
 from bret.data_loaders import GenericDataLoader
-from bret.data_utils import get_corpus_file, get_root_dir
+from bret.utils import get_corpus_file, get_root_dir
 
 
 def main():

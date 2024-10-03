@@ -27,8 +27,6 @@ class BayesianLinear(nn.Module):
 
     def forward(self, x):
         batch_size = x.size(0)
-        if x.ndim == 2:
-            x = x[:, None, :]
         z = (
             torch.randn(
                 (batch_size, *self.weight_mean.shape), dtype=self.weight_mean.dtype, device=self.weight_mean.device

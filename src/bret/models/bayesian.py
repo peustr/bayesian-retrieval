@@ -20,7 +20,8 @@ class BayesianRetriever(Retriever):
         return sum_kld
 
     def forward(self, query=None, passage=None, num_samples=None):
-        if num_samples is None:
+        num_samples = num_samples or 1
+        if num_samples == 1:
             qry_reps = self._encode(query)
             if qry_reps is not None:
                 qry_reps = qry_reps.unsqueeze(1)

@@ -50,23 +50,26 @@ class DPRTrainer:
             max_ndcg_at_k = 0.0
         else:
             max_ndcg_at_k = 1.0
+        scaler = torch.amp.GradScaler(self.device.type, enabled=True)
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
             for qry, psg in self.training_data:
                 qry = qry.to(self.device)
                 psg = psg.to(self.device)
+                with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
+                    qry_reps, psg_reps = self.model(qry, psg)
+                    scores = dot_product_similarity(qry_reps, psg_reps)
+                    targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
+                        psg_reps.size(0) // qry_reps.size(0)
+                    )
+                    loss = F.cross_entropy(scores, targets)
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
-                qry_reps, psg_reps = self.model(qry, psg)
-                scores = dot_product_similarity(qry_reps, psg_reps)
-                targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
-                    psg_reps.size(0) // qry_reps.size(0)
-                )
-                loss = F.cross_entropy(scores, targets)
-                loss.backward()
-                optimizer.step()
                 scheduler.step()
-            metrics = self._compute_validation_metrics(k=k)
+            metrics = self._compute_validation_metrics("dpr", k=k)
             ndcg_at_k = metrics["nDCG@" + str(k)]
             mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()
@@ -77,12 +80,13 @@ class DPRTrainer:
                 max_ndcg_at_k = ndcg_at_k
                 logger.info("Model saved in: %s", ckpt_file_name)
 
-    def _compute_validation_metrics(self, k=20, **kwargs):
+    def _compute_validation_metrics(self, method, k=20, **kwargs):
         self.model.eval()
-        psg_embs = encode_corpus(self.validation_corpus, self.model, self.device, **kwargs)
+        psg_embs = encode_corpus(self.validation_corpus, self.model, self.device, method, **kwargs)
         index = FaissIndex.build(psg_embs)
         evaluator = Evaluator(
             self.model,
+            method,
             self.device,
             index=index,
             metrics={"ndcg", "recip_rank"},
@@ -102,27 +106,30 @@ class BayesianDPRTrainer(DPRTrainer):
             max_ndcg_at_k = 0.0
         else:
             max_ndcg_at_k = 1.0
+        scaler = torch.amp.GradScaler(self.device.type, enabled=True)
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
             for qry, psg in self.training_data:
                 qry = qry.to(self.device)
                 psg = psg.to(self.device)
+                with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
+                    qry_reps, psg_reps = self.model(qry, psg, num_samples=num_samples)
+                    qry_reps = encode_query_mean(qry_reps)
+                    psg_reps = encode_passage_mean(psg_reps)
+                    scores = dot_product_similarity(qry_reps, psg_reps)
+                    targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
+                        psg_reps.size(0) // qry_reps.size(0)
+                    )
+                    loss_ce = F.cross_entropy(scores, targets)
+                    loss_kld = self.model.kl() / len(self.training_data.dataset)
+                    loss = loss_ce + loss_kld
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
-                qry_reps, psg_reps = self.model(qry, psg, num_samples=num_samples)
-                qry_reps = encode_query_mean(qry_reps)
-                psg_reps = encode_passage_mean(psg_reps)
-                scores = dot_product_similarity(qry_reps, psg_reps)
-                targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
-                    psg_reps.size(0) // qry_reps.size(0)
-                )
-                loss_ce = F.cross_entropy(scores, targets)
-                loss_kld = self.model.kl() / len(self.training_data.dataset)
-                loss = loss_ce + loss_kld
-                loss.backward()
-                optimizer.step()
                 scheduler.step()
-            metrics = self._compute_validation_metrics(k=k, num_samples=num_samples)
+            metrics = self._compute_validation_metrics("bret", k=k, num_samples=num_samples)
             ndcg_at_k = metrics["nDCG@" + str(k)]
             mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()

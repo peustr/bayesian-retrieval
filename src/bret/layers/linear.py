@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class BayesianLinear(nn.Module):
-    def __init__(self, prior, prior_var=1.0):
+    def __init__(self, prior, prior_var=1e-3):
         super().__init__()
         self.weight_prior_mean = prior.weight.data.clone().detach()
         self.weight_prior_var = prior_var
@@ -16,7 +16,7 @@ class BayesianLinear(nn.Module):
             self.bias.requires_grad = False
 
     def _init_logvar(self):
-        self.weight_logvar = nn.Parameter(-np.log(128) + 0.5 * torch.randn_like(self.weight_mean))
+        self.weight_logvar = nn.Parameter(-np.log(2**10) + 0.5 * torch.randn_like(self.weight_mean))
 
     @property
     def weight_var(self):

@@ -11,7 +11,7 @@ conda activate bret
 
 CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/encode_queries.py \
     --dataset_id msmarco \
-    --split train \
+    --split train-queries \
     --model_name bert-base \
     --encoder_ckpt output/trained_encoders/bert-base.pt \
     --batch_size 32 \

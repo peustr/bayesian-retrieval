@@ -5,4 +5,4 @@ from bret.utils.file_utils import (
     get_results_file_name,
     get_run_file_name,
 )
-from bret.utils.model_utils import disable_grad, get_hf_model_id
+from bret.utils.model_utils import disable_grad, enable_grad, get_hf_model_id

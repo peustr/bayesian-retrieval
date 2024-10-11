@@ -46,6 +46,7 @@ def main():
     if os.path.exists(args.encoder_ckpt) and os.path.isfile(args.encoder_ckpt):
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         model.load_state_dict(torch.load(args.encoder_ckpt))
+    model = torch.compile(model)
     model.eval()
 
     query_file = get_query_file(args.dataset_id, split=args.split)
@@ -67,7 +68,7 @@ def main():
         index = FaissIndex.build(
             torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, corpus_file))
         )
-    evaluator = Evaluator(model, device, index=index, metrics={"ndcg", "recip_rank"})
+    evaluator = Evaluator(model, args.method, device, index=index, metrics={"ndcg", "recip_rank"})
     results = evaluator.evaluate_retriever(
         query_dl, qrels, k=args.k, num_samples=args.num_samples, run_file=run_file_name
     )

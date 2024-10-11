@@ -9,11 +9,10 @@ source ${HOME}/.bashrc
 # Activate env.
 conda activate bret
 
-CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_dpr.py \
+CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_bret.py \
     --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
     --model_name bert-base \
-    --method bret \
     --num_samples 1 \
     --batch_size 16 \
     --num_epochs 8 \

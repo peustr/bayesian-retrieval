@@ -10,7 +10,7 @@ from bret.data_loaders import (
     TrainingDataLoader,
 )
 from bret.models import model_factory
-from bret.training import DPRTrainer
+from bret.training import BayesianDPRTrainer
 from bret.utils import get_checkpoint_file_name, get_query_file, get_root_dir
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco"])
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
-    parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
+    parser.add_argument("--method", default="bret", choices=["dpr", "bret"])
     parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
@@ -44,7 +44,11 @@ def main():
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)
-        model.load_state_dict(sd)
+        sdnew = {}
+        for k, v in sd.items():
+            if k.endswith(".weight"):
+                sdnew[k.replace(".weight", ".weight_mean")] = v
+        model.load_state_dict(sdnew, strict=False)
     model = torch.compile(model)
     model.train()
 
@@ -75,7 +79,7 @@ def main():
     dataset_dir = get_root_dir(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
-    trainer = DPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
+    trainer = BayesianDPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     trainer.train(
         num_epochs=args.num_epochs,
         lr=args.lr,

@@ -36,6 +36,7 @@ def main():
     if os.path.exists(args.encoder_ckpt) and os.path.isfile(args.encoder_ckpt):
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         model.load_state_dict(torch.load(args.encoder_ckpt))
+    model = torch.compile(model)
     model.eval()
 
     query_file = get_query_file(args.dataset_id, split=args.split)
@@ -48,7 +49,7 @@ def main():
         batch_size=1,
         shuffle=False,
     )
-    qry_embs = encode_queries(query_dl, model, device, args.num_samples)
+    qry_embs = encode_queries(query_dl, model, device, args.method, args.num_samples)
     torch.save(qry_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, query_file))
     t_end = time.time()
     logger.info("Encoding the queries finished in %.2f minutes.", (t_end - t_start) / 60)

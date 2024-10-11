@@ -35,6 +35,7 @@ def main():
     if os.path.exists(args.encoder_ckpt) and os.path.isfile(args.encoder_ckpt):
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         model.load_state_dict(torch.load(args.encoder_ckpt))
+    model = torch.compile(model)
     model.eval()
 
     corpus_file = get_corpus_file(args.dataset_id)
@@ -47,7 +48,7 @@ def main():
         batch_size=args.batch_size,
         shuffle=False,
     )
-    psg_embs = encode_corpus(corpus_dl, model, device, args.num_samples)
+    psg_embs = encode_corpus(corpus_dl, model, device, args.method, args.num_samples)
     torch.save(psg_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, corpus_file))
     t_end = time.time()
     logger.info("Encoding the corpus finished in %.2f minutes.", (t_end - t_start) / 60)

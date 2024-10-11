@@ -77,6 +77,7 @@ class TrainingDataLoader(DataLoader):
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
+            pin_memory=True,
             collate_fn=QueryDocumentCollator(tokenizer, max_qry_len=max_qry_len, max_psg_len=max_psg_len),
             drop_last=True,
         )
@@ -130,6 +131,7 @@ class QueryDataLoader(DataLoader):
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
+            pin_memory=True,
             collate_fn=TextCollator(tokenizer, max_qry_len),
             drop_last=False,
         )
@@ -154,6 +156,7 @@ class CorpusDataLoader(DataLoader):
             dataset,
             batch_size=batch_size,
             shuffle=shuffle,
+            pin_memory=True,
             collate_fn=TextCollator(tokenizer, max_psg_len),
             drop_last=False,
         )

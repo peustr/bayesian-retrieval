@@ -1,10 +1,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class BayesianLinear(nn.Module):
-    def __init__(self, prior, prior_var=1e-3):
+    def __init__(self, prior, prior_var=1e-4):
         super().__init__()
         self.weight_prior_mean = prior.weight.data.clone().detach()
         self.weight_prior_var = prior_var
@@ -30,13 +31,8 @@ class BayesianLinear(nn.Module):
         )
 
     def forward(self, x):
-        batch_size = x.size(0)
-        z = (
-            torch.randn(
-                (batch_size, *self.weight_mean.shape), dtype=self.weight_mean.dtype, device=self.weight_mean.device
-            )
+        W = (
+            torch.randn(self.weight_mean.shape, dtype=self.weight_mean.dtype, device=self.weight_mean.device)
             * self.weight_var.sqrt()
         )
-        if self.bias is not None:
-            return torch.bmm(x, (self.weight_mean + z).transpose(-2, -1)) + self.bias
-        return torch.bmm(x, (self.weight_mean + z).transpose(-2, -1))
+        return F.linear(x, W, self.bias)

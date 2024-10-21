@@ -49,7 +49,6 @@ def main():
             if k.endswith(".weight"):
                 sdnew[k.replace(".weight", ".weight_mean")] = v
         model.load_state_dict(sdnew, strict=False)
-    model = torch.compile(model)
     model.train()
 
     train_dl = TrainingDataLoader(

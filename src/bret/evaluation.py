@@ -4,6 +4,7 @@ import os
 import time
 
 import numpy as np
+import torch
 from pytrec_eval import RelevanceEvaluator
 
 from bret.encoding import encode_query_mean
@@ -35,7 +36,8 @@ class Evaluator:
                     json.dump(run, f)
                 logger.info("Run saved in: %s", run_file)
         logger.info("Calculating metrics...")
-        results = self._calculate_metrics(run, qrels, k=k)
+        with torch.no_grad():
+            results = self._calculate_metrics(run, qrels, k=k)
         return results
 
     def _generate_run(self, qry_data_loader, k=20, num_samples=None):

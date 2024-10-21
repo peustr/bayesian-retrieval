@@ -22,7 +22,7 @@ def encode_queries(queries, encoder, device, method, num_samples=None):
             else:
                 qry_reps, _ = encoder(qry, None)
             qry_embs.append(qry_reps.detach().cpu())
-    qry_embs = torch.cat(qry_embs, dim=0)
+        qry_embs = torch.cat(qry_embs, dim=0)
     return qry_embs
 
 
@@ -37,5 +37,5 @@ def encode_corpus(corpus, encoder, device, method, num_samples=None):
             else:
                 _, psg_reps = encoder(None, psg)
             psg_embs.append(psg_reps.detach().cpu())
-    psg_embs = torch.cat(psg_embs, dim=0)
+        psg_embs = torch.cat(psg_embs, dim=0)
     return psg_embs

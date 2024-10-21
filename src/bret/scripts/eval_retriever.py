@@ -46,7 +46,6 @@ def main():
     if os.path.exists(args.encoder_ckpt) and os.path.isfile(args.encoder_ckpt):
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         model.load_state_dict(torch.load(args.encoder_ckpt))
-    model = torch.compile(model)
     model.eval()
 
     query_file = get_query_file(args.dataset_id, split=args.split)

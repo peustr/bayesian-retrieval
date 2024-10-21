@@ -45,7 +45,6 @@ def main():
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt)
         model.load_state_dict(sd)
-    model = torch.compile(model)
     model.train()
 
     train_dl = TrainingDataLoader(

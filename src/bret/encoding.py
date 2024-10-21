@@ -4,11 +4,11 @@ from bret.models.bayesian import BayesianRetriever
 
 
 def encode_query_mean(qry_reps):
-    return qry_reps.mean(dim=1)
+    return qry_reps.mean(dim=0)
 
 
 def encode_passage_mean(psg_reps):
-    return psg_reps.mean(dim=1)
+    return psg_reps.mean(dim=0)
 
 
 def encode_queries(queries, encoder, device, method, num_samples=None):

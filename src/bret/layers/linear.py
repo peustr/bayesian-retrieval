@@ -31,8 +31,8 @@ class BayesianLinear(nn.Module):
         )
 
     def forward(self, x):
-        W = (
+        z = (
             torch.randn(self.weight_mean.shape, dtype=self.weight_mean.dtype, device=self.weight_mean.device)
             * self.weight_var.sqrt()
         )
-        return F.linear(x, W, self.bias)
+        return F.linear(x, self.weight_mean + z, self.bias)

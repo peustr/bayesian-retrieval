@@ -10,13 +10,10 @@ class BayesianRetriever(Retriever):
         super().__init__(backbone, device)
 
     def kl(self):
-        sum_kld = None
+        sum_kld = torch.tensor(0.0, device=self.device)
         for _, m in self.backbone.named_modules():
             if isinstance(m, BayesianLinear):
-                if sum_kld is None:
-                    sum_kld = m.kl()
-                else:
-                    sum_kld += m.kl()
+                sum_kld += m.kl()
         return sum_kld
 
     def forward(self, query=None, passage=None, num_samples=None):
@@ -43,9 +40,11 @@ class BayesianBERTRetriever(BayesianRetriever):
         disable_grad(self.backbone.embeddings)
         for i in range(len(backbone.encoder.layer)):
             self.backbone.encoder.layer[i].intermediate.dense = BayesianLinear(
-                self.backbone.encoder.layer[i].intermediate.dense
+                self.backbone.encoder.layer[i].intermediate.dense,
             )
-            self.backbone.encoder.layer[i].output.dense = BayesianLinear(self.backbone.encoder.layer[i].output.dense)
+            self.backbone.encoder.layer[i].output.dense = BayesianLinear(
+                self.backbone.encoder.layer[i].output.dense,
+            )
 
     def cls_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
@@ -58,8 +57,12 @@ class BayesianDistilBERTRetriever(BayesianRetriever):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
         for i in range(len(backbone.transformer.layer)):
-            self.backbone.transformer.layer[i].ffn.lin1 = BayesianLinear(self.backbone.transformer.layer[i].ffn.lin1)
-            self.backbone.transformer.layer[i].ffn.lin2 = BayesianLinear(self.backbone.transformer.layer[i].ffn.lin2)
+            self.backbone.transformer.layer[i].ffn.lin1 = BayesianLinear(
+                self.backbone.transformer.layer[i].ffn.lin1,
+            )
+            self.backbone.transformer.layer[i].ffn.lin2 = BayesianLinear(
+                self.backbone.transformer.layer[i].ffn.lin2,
+            )
 
     def cls_pooling(self, model_output, *args):
         return model_output.last_hidden_state[:, 0]

@@ -2,37 +2,30 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions.kl import kl_divergence
+from torch.distributions.normal import Normal
 
 
 class BayesianLinear(nn.Module):
-    def __init__(self, prior, prior_var=1e-4):
+    def __init__(self, prior, prior_scale=0.01):
         super().__init__()
-        self.weight_prior_mean = prior.weight.data.clone().detach()
-        self.weight_prior_var = prior_var
+        self.prior = Normal(prior.weight.data.detach().clone(), prior_scale)
+        self.posterior = None  # Populated in .forward()
         self.weight_mean = prior.weight
-        self._init_logvar()
+        self.weight_logvar = nn.Parameter(-np.log(2**16) + 0.5 * torch.randn_like(self.weight_mean))
         self.bias = prior.bias
         if self.bias is not None:
             # We don't have to sample/train the bias, as it's just an offset to the mean.
             self.bias.requires_grad = False
-
-    def _init_logvar(self):
-        self.weight_logvar = nn.Parameter(-np.log(2**10) + 0.5 * torch.randn_like(self.weight_mean))
 
     @property
     def weight_var(self):
         return self.weight_logvar.exp()
 
     def kl(self):
-        return 0.5 * (
-            (((self.weight_mean - self.weight_prior_mean).pow(2) + self.weight_var) / self.weight_prior_var).sum()
-            - (self.weight_var / self.weight_prior_var).log().sum()
-            - self.weight_mean.numel()
-        )
+        return kl_divergence(self.posterior, self.prior).sum()
 
     def forward(self, x):
-        z = (
-            torch.randn(self.weight_mean.shape, dtype=self.weight_mean.dtype, device=self.weight_mean.device)
-            * self.weight_var.sqrt()
-        )
-        return F.linear(x, self.weight_mean + z, self.bias)
+        self.posterior = Normal(self.weight_mean, self.weight_var.sqrt())
+        W = self.posterior.rsample()
+        return F.linear(x, W, self.bias)

@@ -13,6 +13,7 @@ class Retriever(nn.Module):
     def __init__(self, backbone, device="cpu"):
         super().__init__()
         self.backbone = backbone
+        self.device = device
         self.to(device)
 
     def forward(self, query=None, passage=None):

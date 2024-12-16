@@ -1,6 +1,7 @@
 import logging
 import time
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
@@ -106,6 +107,8 @@ class BayesianDPRTrainer(DPRTrainer):
             max_ndcg_at_k = 0.0
         else:
             max_ndcg_at_k = 1.0
+        ce = []
+        kld = []
         scaler = torch.amp.GradScaler(self.device.type, enabled=True)
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
@@ -129,11 +132,14 @@ class BayesianDPRTrainer(DPRTrainer):
                 scaler.update()
                 optimizer.zero_grad()
                 scheduler.step()
+                ce.append(loss_ce.detach().cpu())
+                kld.append(loss_kld.detach().cpu())
             metrics = self._compute_validation_metrics("bret", k=k, num_samples=num_samples)
             ndcg_at_k = metrics["nDCG@" + str(k)]
             mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
+            logger.info("Training loss: CE=%.3f | KLD=%.3f", np.mean(ce), np.mean(kld))
             logger.info("Validation metrics: nDCG@%d=%.3f | MRR@%d=%.3f", k, ndcg_at_k, k, mrr_at_k)
             if ndcg_at_k > max_ndcg_at_k:
                 torch.save(self.model.state_dict(), ckpt_file_name)

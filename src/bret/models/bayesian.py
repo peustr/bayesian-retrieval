@@ -16,22 +16,12 @@ class BayesianRetriever(Retriever):
                 sum_kld += m.kl()
         return sum_kld
 
-    def forward(self, query=None, passage=None, num_samples=None):
+    def forward(self, qry_or_psg, num_samples=None):
         num_samples = num_samples or 1
-        qry_reps = []
-        psg_reps = []
+        reps = []
         for _ in range(num_samples):
-            qry_reps.append(self._encode(query))
-            psg_reps.append(self._encode(passage))
-        try:
-            qry_reps = torch.stack(qry_reps)
-        except TypeError:
-            qry_reps = None
-        try:
-            psg_reps = torch.stack(psg_reps)
-        except TypeError:
-            psg_reps = None
-        return (qry_reps, psg_reps)
+            reps.append(self._encode(qry_or_psg))
+        return torch.stack(reps)
 
 
 class BayesianBERTRetriever(BayesianRetriever):

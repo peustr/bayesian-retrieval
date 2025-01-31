@@ -5,7 +5,7 @@ import time
 
 import torch
 
-from bret.data_loaders import CorpusDataLoader
+from bret.data_loaders import get_text_dataloader
 from bret.encoding import encode_corpus
 from bret.models import model_factory
 from bret.utils import get_corpus_file, get_embedding_file_name
@@ -40,14 +40,8 @@ def main():
     corpus_file = get_corpus_file(args.dataset_id)
     logger.info("Encoding the corpus in: %s", corpus_file)
     t_start = time.time()
-    corpus_dl = CorpusDataLoader(
-        tokenizer,
-        corpus_file,
-        max_psg_len=args.max_psg_len,
-        batch_size=args.batch_size,
-        shuffle=False,
-    )
-    psg_embs = encode_corpus(corpus_dl, model, device, args.method, args.num_samples)
+    corpus_dl = get_text_dataloader(corpus_file, batch_size=args.batch_size, shuffle=False)
+    psg_embs = encode_corpus(corpus_dl, tokenizer, model, device, args.method, args.num_samples, args.max_psg_len)
     torch.save(psg_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, corpus_file))
     t_end = time.time()
     logger.info("Encoding the corpus finished in %.2f minutes.", (t_end - t_start) / 60)

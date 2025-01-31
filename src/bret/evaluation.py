@@ -13,14 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class Evaluator:
-    def __init__(self, model, method, device, index=None, metrics={"ndcg", "recip_rank"}):
+    def __init__(self, tokenizer, model, method, device, index=None, metrics={"ndcg", "recip_rank"}):
+        self.tokenizer = tokenizer
         self.model = model
         self.method = method
         self.device = device
         self.index = index
         self.metrics = metrics
 
-    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None, run_file=None):
+    def evaluate_retriever(self, qry_data_loader, qrels, k=20, num_samples=None, max_qry_len=32, run_file=None):
         if run_file is not None and os.path.exists(run_file) and os.path.isfile(run_file):
             logger.info("Loading run from: %s", run_file)
             with open(run_file, "r", encoding="utf-8") as f:
@@ -28,7 +29,8 @@ class Evaluator:
         else:
             logger.info("Generating run...")
             t_start = time.time()
-            run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples)
+            with torch.no_grad():
+                run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples, max_qry_len=max_qry_len)
             t_end = time.time()
             logger.info("Run generated in %.2f minutes.", (t_end - t_start) / 60)
             if run_file is not None:
@@ -36,13 +38,13 @@ class Evaluator:
                     json.dump(run, f)
                 logger.info("Run saved in: %s", run_file)
         logger.info("Calculating metrics...")
-        with torch.no_grad():
-            results = self._calculate_metrics(run, qrels, k=k)
+        results = self._calculate_metrics(run, qrels, k=k)
         return results
 
-    def _generate_run(self, qry_data_loader, k=20, num_samples=None):
+    def _generate_run(self, qry_data_loader, k=20, num_samples=None, max_qry_len=32):
         run = {}
         for qry_id, qry in qry_data_loader:
+            qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
             qry = qry.to(self.device)
             if self.method == "bret":
                 qry_reps, _ = self.model(qry, None, num_samples=num_samples)

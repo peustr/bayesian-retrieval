@@ -1,9 +1,26 @@
 import csv
 import json
+import logging
 import os
+import random
+
+from datasets import Dataset as HuggingFaceDataset
+from torch.utils.data import DataLoader, Dataset
+
+logger = logging.getLogger(__name__)
+
+
+def _load_data(data_file):
+    if data_file.endswith(".jsonl"):
+        data = HuggingFaceDataset.from_json(data_file)
+    else:
+        raise NotImplementedError("Data file with format {} not supported.".format(data_file.split(".")[-1]))
+    return data
 
 
 class GenericDataLoader:
+    """Original implementation in BEIR repository: https://github.com/beir-cellar/beir/blob/main/beir/datasets/data_loader.py"""
+
     def __init__(
         self, data_dir, corpus_file="corpus.jsonl", query_file="queries.jsonl", qrels_dir="qrels", split="train"
     ):
@@ -52,6 +69,8 @@ class GenericDataLoader:
         self.check(self.qrels_file, "tsv")
         if os.path.exists(self.qrels_file):
             self._load_qrels()
+            if len(self.queries) > 0:
+                self.queries = {qid: self.queries[qid] for qid in self.qrels}
         return self.qrels
 
     def _load_corpus(self):
@@ -78,3 +97,43 @@ class GenericDataLoader:
                 self.qrels[query_id] = {corpus_id: score}
             else:
                 self.qrels[query_id][corpus_id] = score
+
+
+class TextDataset(Dataset):
+    def __init__(self, data_file):
+        self.data = _load_data(data_file)
+        self._num_samples = len(self.data)
+
+    def __len__(self):
+        return self._num_samples
+
+    def __getitem__(self, i):
+        return self.data[i]["text"]
+
+
+class TrainingDataset(Dataset):
+    def __init__(self, data_file):
+        self.data = _load_data(data_file)
+        self._num_samples = len(self.data)
+
+    def __len__(self):
+        return self._num_samples
+
+    def __getitem__(self, i):
+        pos_psg = self.data[i]["pos"]
+        neg_psg = self.data[i]["neg"]
+        return (
+            self.data[i]["query"],
+            pos_psg[random.randint(0, len(pos_psg) - 1)],
+            neg_psg[random.randint(0, len(neg_psg) - 1)],
+        )
+
+
+def get_training_dataloader(data_file, batch_size=32, shuffle=True):
+    dataset = TrainingDataset(data_file)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True, drop_last=True)
+
+
+def get_text_dataloader(data_file, batch_size=32, shuffle=False):
+    dataset = TrainingDataset(data_file)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True, drop_last=False)

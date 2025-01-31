@@ -5,7 +5,7 @@ import os
 
 import torch
 
-from bret.data_loaders import GenericDataLoader, QueryDataLoader
+from bret.data_loaders import GenericDataLoader, get_text_dataloader
 from bret.evaluation import Evaluator
 from bret.indexing import FaissIndex
 from bret.models import model_factory
@@ -50,13 +50,7 @@ def main():
 
     query_file = get_query_file(args.dataset_id, split=args.split)
     logger.info("Searching corpus with queries from: %s", query_file)
-    query_dl = QueryDataLoader(
-        tokenizer,
-        query_file,
-        max_qry_len=args.max_qry_len,
-        batch_size=1,
-        shuffle=False,
-    )
+    query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)
     dataset_dir = get_root_dir(args.dataset_id)
     corpus_file = get_corpus_file(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split=args.split).load_qrels()
@@ -67,9 +61,9 @@ def main():
         index = FaissIndex.build(
             torch.load(get_embedding_file_name(args.embeddings_dir, args.encoder_ckpt, corpus_file))
         )
-    evaluator = Evaluator(model, args.method, device, index=index, metrics={"ndcg", "recip_rank"})
+    evaluator = Evaluator(tokenizer, model, args.method, device, index=index, metrics={"ndcg", "recip_rank"})
     results = evaluator.evaluate_retriever(
-        query_dl, qrels, k=args.k, num_samples=args.num_samples, run_file=run_file_name
+        query_dl, qrels, k=args.k, num_samples=args.num_samples, max_qry_len=args.max_qry_len, run_file=run_file_name
     )
     results_file_name = get_results_file_name(args.output_dir, args.encoder_ckpt, query_file, args.k)
     with open(results_file_name, "w") as fp:

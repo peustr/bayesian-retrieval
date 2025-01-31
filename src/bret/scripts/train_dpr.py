@@ -4,10 +4,9 @@ import logging
 import torch
 
 from bret.data_loaders import (
-    CorpusDataLoader,
     GenericDataLoader,
-    QueryDataLoader,
-    TrainingDataLoader,
+    get_text_dataloader,
+    get_training_dataloader,
 )
 from bret.models import model_factory
 from bret.training import DPRTrainer
@@ -47,34 +46,15 @@ def main():
         model.load_state_dict(sd)
     model.train()
 
-    train_dl = TrainingDataLoader(
-        tokenizer,
-        args.training_data_file,
-        max_qry_len=args.max_qry_len,
-        max_psg_len=args.max_psg_len,
-        batch_size=args.batch_size,
-        shuffle=True,
-    )
+    train_dl = get_training_dataloader(args.training_data_file, batch_size=args.batch_size, shuffle=True)
     query_file = get_query_file(args.dataset_id, split="val")
-    val_query_dl = QueryDataLoader(
-        tokenizer,
-        query_file,
-        max_qry_len=args.max_qry_len,
-        batch_size=1,
-        shuffle=False,
-    )
+    val_query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)
     corpus_file = "data/msmarco-corpus-val.jsonl"
-    val_corpus_dl = CorpusDataLoader(
-        tokenizer,
-        corpus_file,
-        max_psg_len=args.max_psg_len,
-        batch_size=args.batch_size,
-        shuffle=False,
-    )
+    val_corpus_dl = get_text_dataloader(corpus_file, batch_size=args.batch_size, shuffle=False)
     dataset_dir = get_root_dir(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
     ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
-    trainer = DPRTrainer(model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
+    trainer = DPRTrainer(tokenizer, model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     trainer.train(
         num_epochs=args.num_epochs,
         lr=args.lr,
@@ -82,6 +62,8 @@ def main():
         warmup_rate=args.warmup_rate,
         ckpt_file_name=ckpt_file_name,
         num_samples=args.num_samples,
+        max_qry_len=args.max_qry_len,
+        max_psg_len=args.max_psg_len,
     )
     logger.info("Training finished after %d epochs.", args.num_epochs)
 

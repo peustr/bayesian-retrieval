@@ -10,6 +10,7 @@ from torch.optim.lr_scheduler import LinearLR, SequentialLR
 from bret.encoding import encode_corpus, encode_passage_mean, encode_query_mean
 from bret.evaluation import Evaluator
 from bret.indexing import FaissIndex
+from bret.losses import BPRLoss
 from bret.relevance import dot_product_similarity
 
 logger = logging.getLogger(__name__)
@@ -35,15 +36,28 @@ def make_lr_scheduler_with_warmup(model, training_data, lr, min_lr, num_epochs, 
 
 
 class DPRTrainer:
-    def __init__(self, model, training_data, validation_queries, validation_corpus, qrels, device):
+    def __init__(self, tokenizer, model, training_data, validation_queries, validation_corpus, qrels, device):
+        self.tokenizer = tokenizer
         self.model = model
         self.training_data = training_data
         self.validation_queries = validation_queries
         self.validation_corpus = validation_corpus
         self.qrels = qrels
         self.device = device
+        self.loss_func = BPRLoss()
 
-    def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, **kwargs):
+    def train(
+        self,
+        num_epochs=4,
+        lr=5e-6,
+        min_lr=5e-8,
+        warmup_rate=0.1,
+        ckpt_file_name=None,
+        k=20,
+        max_qry_len=32,
+        max_psg_len=256,
+        **kwargs
+    ):
         optimizer, scheduler = make_lr_scheduler_with_warmup(
             self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate
         )
@@ -55,16 +69,18 @@ class DPRTrainer:
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
-            for qry, psg in self.training_data:
+            for qry, pos_psg, neg_psg in self.training_data:
+                qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
                 qry = qry.to(self.device)
-                psg = psg.to(self.device)
+                pos_psg = self.tokenizer(pos_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                pos_psg = pos_psg.to(self.device)
+                neg_psg = self.tokenizer(neg_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                neg_psg = neg_psg.to(self.device)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
-                    qry_reps, psg_reps = self.model(qry, psg)
-                    scores = dot_product_similarity(qry_reps, psg_reps)
-                    targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
-                        psg_reps.size(0) // qry_reps.size(0)
-                    )
-                    loss = F.cross_entropy(scores, targets)
+                    qry_emb = self.model(qry)
+                    pos_emb = self.model(pos_psg)
+                    neg_emb = self.model(neg_psg)
+                    loss = self.loss_func(qry_emb, pos_emb, neg_emb)
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
@@ -96,10 +112,21 @@ class DPRTrainer:
 
 
 class BayesianDPRTrainer(DPRTrainer):
-    def __init__(self, model, training_data, validation_queries, validation_corpus, qrels, device):
-        super().__init__(model, training_data, validation_queries, validation_corpus, qrels, device)
+    def __init__(self, tokenizer, model, training_data, validation_queries, validation_corpus, qrels, device):
+        super().__init__(tokenizer, model, training_data, validation_queries, validation_corpus, qrels, device)
 
-    def train(self, num_epochs=4, lr=5e-6, min_lr=5e-8, warmup_rate=0.1, ckpt_file_name=None, k=20, num_samples=10):
+    def train(
+        self,
+        num_epochs=4,
+        lr=5e-6,
+        min_lr=5e-8,
+        warmup_rate=0.1,
+        ckpt_file_name=None,
+        k=20,
+        num_samples=10,
+        max_qry_len=32,
+        max_psg_len=256,
+    ):
         optimizer, scheduler = make_lr_scheduler_with_warmup(
             self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate
         )
@@ -113,18 +140,18 @@ class BayesianDPRTrainer(DPRTrainer):
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
-            for qry, psg in self.training_data:
+            for qry, pos_psg, neg_psg in self.training_data:
+                qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
                 qry = qry.to(self.device)
-                psg = psg.to(self.device)
+                pos_psg = self.tokenizer(pos_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                pos_psg = pos_psg.to(self.device)
+                neg_psg = self.tokenizer(neg_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                neg_psg = neg_psg.to(self.device)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
-                    qry_reps, psg_reps = self.model(qry, psg, num_samples=num_samples)
-                    qry_reps = encode_query_mean(qry_reps)
-                    psg_reps = encode_passage_mean(psg_reps)
-                    scores = dot_product_similarity(qry_reps, psg_reps)
-                    targets = torch.arange(scores.size(0), device=self.device, dtype=torch.long) * (
-                        psg_reps.size(0) // qry_reps.size(0)
-                    )
-                    loss_ce = F.cross_entropy(scores, targets)
+                    qry_emb = self.model(qry)
+                    pos_emb = self.model(pos_psg)
+                    neg_emb = self.model(neg_psg)
+                    loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
                     loss_kld = self.model.kl() / len(self.training_data.dataset)
                     loss = loss_ce + loss_kld
                 scaler.scale(loss).backward()

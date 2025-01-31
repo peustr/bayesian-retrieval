@@ -5,7 +5,7 @@ import time
 
 import torch
 
-from bret.data_loaders import QueryDataLoader
+from bret.data_loaders import get_text_dataloader
 from bret.encoding import encode_queries
 from bret.models import model_factory
 from bret.utils import get_embedding_file_name, get_query_file
@@ -41,14 +41,8 @@ def main():
     query_file = get_query_file(args.dataset_id, split=args.split)
     logger.info("Encoding the queries in: %s", query_file)
     t_start = time.time()
-    query_dl = QueryDataLoader(
-        tokenizer,
-        query_file,
-        max_qry_len=args.max_qry_len,
-        batch_size=1,
-        shuffle=False,
-    )
-    qry_embs = encode_queries(query_dl, model, device, args.method, args.num_samples)
+    query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)
+    qry_embs = encode_queries(query_dl, tokenizer, model, device, args.method, args.num_samples, args.max_qry_len)
     torch.save(qry_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, query_file))
     t_end = time.time()
     logger.info("Encoding the queries finished in %.2f minutes.", (t_end - t_start) / 60)

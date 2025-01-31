@@ -16,14 +16,10 @@ class Retriever(nn.Module):
         self.device = device
         self.to(device)
 
-    def forward(self, query=None, passage=None):
-        qry_reps = self._encode(query)
-        psg_reps = self._encode(passage)
-        return (qry_reps, psg_reps)
+    def forward(self, qry_or_psg):
+        return self._encode(qry_or_psg)
 
     def _encode(self, qry_or_psg):
-        if qry_or_psg is None:
-            return None
         model_output = self.backbone(**qry_or_psg, return_dict=True)
         embeddings = self.cls_pooling(model_output, qry_or_psg["attention_mask"])
         return embeddings

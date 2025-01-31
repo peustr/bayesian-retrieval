@@ -47,10 +47,10 @@ class Evaluator:
             qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
             qry = qry.to(self.device)
             if self.method == "bret":
-                qry_reps, _ = self.model(qry, None, num_samples=num_samples)
+                qry_reps = self.model(qry, num_samples=num_samples)
                 qry_reps = encode_query_mean(qry_reps)
             else:
-                qry_reps, _ = self.model(qry, None)
+                qry_reps = self.model(qry)
             scores, indices = self.index.search(qry_reps, k)
             qid = str(qry_id[0])
             run[qid] = {}

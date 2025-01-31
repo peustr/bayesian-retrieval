@@ -44,7 +44,9 @@ class Evaluator:
     def _generate_run(self, qry_data_loader, k=20, num_samples=None, max_qry_len=32):
         run = {}
         for qry_id, qry in qry_data_loader:
-            qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
+            qry = self.tokenizer(
+                qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
+            )
             qry = qry.to(self.device)
             if self.method == "bret":
                 qry_reps = self.model(qry, num_samples=num_samples)

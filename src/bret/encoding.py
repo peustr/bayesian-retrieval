@@ -15,7 +15,7 @@ def encode_queries(queries, tokenizer, encoder, device, method, num_samples=None
     qry_embs = []
     with torch.no_grad():
         for _, qry in queries:
-            qry = tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
+            qry = tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt")
             qry = qry.to(device)
             if method == "bret":
                 qry_reps = encoder(qry, num_samples=num_samples)
@@ -31,7 +31,7 @@ def encode_corpus(corpus, tokenizer, encoder, device, method, num_samples=None, 
     psg_embs = []
     with torch.no_grad():
         for _, psg in corpus:
-            psg = tokenizer(psg, padding="max_length", truncation=True, max_length=max_psg_len)
+            psg = tokenizer(psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt")
             psg = psg.to(device)
             if method == "bret":
                 psg_reps = encoder(psg, num_samples=num_samples)

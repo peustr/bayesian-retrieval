@@ -70,11 +70,17 @@ class DPRTrainer:
             t_start = time.time()
             self.model.train()
             for qry, pos_psg, neg_psg in self.training_data:
-                qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
+                qry = self.tokenizer(
+                    qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
+                )
                 qry = qry.to(self.device)
-                pos_psg = self.tokenizer(pos_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                pos_psg = self.tokenizer(
+                    pos_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
+                )
                 pos_psg = pos_psg.to(self.device)
-                neg_psg = self.tokenizer(neg_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                neg_psg = self.tokenizer(
+                    neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
+                )
                 neg_psg = neg_psg.to(self.device)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
                     qry_emb = self.model(qry)
@@ -141,11 +147,17 @@ class BayesianDPRTrainer(DPRTrainer):
             t_start = time.time()
             self.model.train()
             for qry, pos_psg, neg_psg in self.training_data:
-                qry = self.tokenizer(qry, padding="max_length", truncation=True, max_length=max_qry_len)
+                qry = self.tokenizer(
+                    qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
+                )
                 qry = qry.to(self.device)
-                pos_psg = self.tokenizer(pos_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                pos_psg = self.tokenizer(
+                    pos_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
+                )
                 pos_psg = pos_psg.to(self.device)
-                neg_psg = self.tokenizer(neg_psg, padding="max_length", truncation=True, max_length=max_psg_len)
+                neg_psg = self.tokenizer(
+                    neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
+                )
                 neg_psg = neg_psg.to(self.device)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
                     qry_emb = self.model(qry)

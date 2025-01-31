@@ -105,7 +105,7 @@ class DPRTrainer:
 
     def _compute_validation_metrics(self, method, k=20, **kwargs):
         self.model.eval()
-        psg_embs = encode_corpus(self.validation_corpus, self.model, self.device, method, **kwargs)
+        psg_embs = encode_corpus(self.validation_corpus, self.tokenizer, self.model, self.device, method, **kwargs)
         index = FaissIndex.build(psg_embs)
         evaluator = Evaluator(
             self.model,

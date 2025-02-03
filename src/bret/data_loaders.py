@@ -108,7 +108,7 @@ class TextDataset(Dataset):
         return self._num_samples
 
     def __getitem__(self, i):
-        return self.data[i]["text"]
+        return (self.data[i]["id"], self.data[i]["text"])
 
 
 class TrainingDataset(Dataset):

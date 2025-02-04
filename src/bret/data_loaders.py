@@ -135,5 +135,5 @@ def get_training_dataloader(data_file, batch_size=32, shuffle=True):
 
 
 def get_text_dataloader(data_file, batch_size=32, shuffle=False):
-    dataset = TrainingDataset(data_file)
+    dataset = TextDataset(data_file)
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True, drop_last=False)

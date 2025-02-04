@@ -35,6 +35,10 @@ def make_lr_scheduler_with_warmup(model, training_data, lr, min_lr, num_epochs, 
     return optimizer, scheduler
 
 
+def concat_tokenized(*tokenized_batches):
+    return {key: torch.cat([batch[key] for batch in tokenized_batches], dim=0) for key in tokenized_batches[0].keys()}
+
+
 class DPRTrainer:
     def __init__(self, tokenizer, model, training_data, validation_queries, validation_corpus, qrels, device):
         self.tokenizer = tokenizer
@@ -65,27 +69,24 @@ class DPRTrainer:
             max_ndcg_at_k = 0.0
         else:
             max_ndcg_at_k = 1.0
-        scaler = torch.amp.GradScaler(self.device.type, enabled=True)
+        scaler = torch.amp.GradScaler(enabled=True)
         for epoch in range(1, num_epochs + 1):
             t_start = time.time()
             self.model.train()
             for qry, pos_psg, neg_psg in self.training_data:
-                qry = self.tokenizer(
+                qry_enc = self.tokenizer(
                     qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
-                )
-                qry = qry.to(self.device)
-                pos_psg = self.tokenizer(
+                ).to(self.device)
+                pos_enc = self.tokenizer(
                     pos_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
-                )
-                pos_psg = pos_psg.to(self.device)
-                neg_psg = self.tokenizer(
+                ).to(self.device)
+                neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
-                )
-                neg_psg = neg_psg.to(self.device)
+                ).to(self.device)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
-                    qry_emb = self.model(qry)
-                    pos_emb = self.model(pos_psg)
-                    neg_emb = self.model(neg_psg)
+                    qry_emb = self.model(qry_enc)
+                    pos_emb = self.model(pos_enc)
+                    neg_emb = self.model(neg_enc)
                     loss = self.loss_func(qry_emb, pos_emb, neg_emb)
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
@@ -141,29 +142,29 @@ class BayesianDPRTrainer(DPRTrainer):
             max_ndcg_at_k = 0.0
         else:
             max_ndcg_at_k = 1.0
-        ce = []
-        kld = []
-        scaler = torch.amp.GradScaler(self.device.type, enabled=True)
+        scaler = torch.amp.GradScaler(enabled=True)
         for epoch in range(1, num_epochs + 1):
+            ce_losses = []
+            kld_losses = []
             t_start = time.time()
             self.model.train()
             for qry, pos_psg, neg_psg in self.training_data:
-                qry = self.tokenizer(
+                qry_enc = self.tokenizer(
                     qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
-                )
-                qry = qry.to(self.device)
-                pos_psg = self.tokenizer(
+                ).to(self.device)
+                pos_enc = self.tokenizer(
                     pos_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
-                )
-                pos_psg = pos_psg.to(self.device)
-                neg_psg = self.tokenizer(
+                ).to(self.device)
+                neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
-                )
-                neg_psg = neg_psg.to(self.device)
+                ).to(self.device)
+                # Instead of three separate forward passes, concatenate inputs.
+                combined_enc = concat_tokenized(qry_enc, pos_enc, neg_enc)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
-                    qry_emb = self.model(qry)
-                    pos_emb = self.model(pos_psg)
-                    neg_emb = self.model(neg_psg)
+                    combined_emb = self.model(combined_enc)
+                    # Split the combined embeddings into three parts.
+                    batch_size = qry_enc["input_ids"].shape[0]
+                    qry_emb, pos_emb, neg_emb = torch.split(combined_emb, batch_size, dim=0)
                     loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
                     loss_kld = self.model.kl() / len(self.training_data.dataset)
                     loss = loss_ce + loss_kld
@@ -172,14 +173,14 @@ class BayesianDPRTrainer(DPRTrainer):
                 scaler.update()
                 optimizer.zero_grad()
                 scheduler.step()
-                ce.append(loss_ce.detach().cpu())
-                kld.append(loss_kld.detach().cpu())
+                ce_losses.append(loss_ce.detach().cpu())
+                kld_losses.append(loss_kld.detach().cpu())
             metrics = self._compute_validation_metrics("bret", k=k, num_samples=num_samples)
             ndcg_at_k = metrics["nDCG@" + str(k)]
             mrr_at_k = metrics["MRR@" + str(k)]
             t_end = time.time()
             logger.info("Epoch %d finished in %.2f minutes.", epoch, (t_end - t_start) / 60)
-            logger.info("Training loss: CE=%.3f | KLD=%.3f", np.mean(ce), np.mean(kld))
+            logger.info("Training loss: CE=%.3f | KLD=%.3f", np.mean(ce_losses), np.mean(kld_losses))
             logger.info("Validation metrics: nDCG@%d=%.3f | MRR@%d=%.3f", k, ndcg_at_k, k, mrr_at_k)
             if ndcg_at_k > max_ndcg_at_k:
                 torch.save(self.model.state_dict(), ckpt_file_name)

@@ -108,6 +108,7 @@ class DPRTrainer:
         psg_embs = encode_corpus(self.validation_corpus, self.tokenizer, self.model, self.device, method, **kwargs)
         index = FaissIndex.build(psg_embs)
         evaluator = Evaluator(
+            self.tokenizer,
             self.model,
             method,
             self.device,

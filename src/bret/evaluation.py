@@ -31,8 +31,7 @@ class Evaluator:
         else:
             logger.info("Generating run...")
             t_start = time.time()
-            with torch.no_grad():
-                run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples, max_qry_len=max_qry_len)
+            run = self._generate_run(qry_data_loader, k=k, num_samples=num_samples, max_qry_len=max_qry_len)
             t_end = time.time()
             logger.info("Run generated in %.2f minutes.", (t_end - t_start) / 60)
             if run_file is not None:
@@ -47,20 +46,21 @@ class Evaluator:
         if qry_data_loader.batch_size != 1:
             raise ValueError("To generate a run, load the queries with a batch size of 1.")
         run = {}
-        for qry_id, qry in qry_data_loader:
-            qry_enc = self.tokenizer(
-                qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
-            ).to(self.device)
-            if self.method == "bret":
-                qry_emb = self.model(qry_enc, num_samples=num_samples)
-                qry_emb = encode_query_mean(qry_emb)
-            else:
-                qry_emb = self.model(qry_enc)
-            scores, indices = self.index.search(qry_emb, k)
-            qid = str(qry_id[0])
-            run[qid] = {}
-            for score, psg_id in zip(scores[0], indices[0]):
-                run[qid][str(psg_id)] = float(score)
+        with torch.no_grad():
+            for qry_id, qry in qry_data_loader:
+                qry_enc = self.tokenizer(
+                    qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
+                ).to(self.device)
+                if self.method == "bret":
+                    qry_emb = self.model(qry_enc, num_samples=num_samples)
+                    qry_emb = encode_query_mean(qry_emb)
+                else:
+                    qry_emb = self.model(qry_enc)
+                scores, indices = self.index.search(qry_emb, k)
+                qid = str(qry_id[0])
+                run[qid] = {}
+                for score, psg_id in zip(scores[0], indices[0]):
+                    run[qid][str(psg_id)] = float(score)
         return run
 
     def _calculate_metrics(self, run, qrels, k=20):

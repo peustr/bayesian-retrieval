@@ -29,7 +29,8 @@ class BayesianLinear(nn.Module):
     def forward(self, x, use_cached_sample=False):
         if use_cached_sample and hasattr(self, "_cached_W"):
             W = self._cached_W
-        self.posterior = Normal(self.weight_mean, self.weight_var.sqrt())
-        W = self.posterior.rsample()
-        self._cached_W = W
+        else:
+            self.posterior = Normal(self.weight_mean, self.weight_var.sqrt())
+            W = self.posterior.rsample()
+            self._cached_W = W
         return F.linear(x, W, self.bias)

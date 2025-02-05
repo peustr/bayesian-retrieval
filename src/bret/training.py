@@ -33,10 +33,6 @@ def make_lr_scheduler_with_warmup(model, training_data, lr, min_lr, num_epochs, 
     return optimizer, scheduler
 
 
-def concat_tokenized(*tokenized_batches):
-    return {key: torch.cat([batch[key] for batch in tokenized_batches], dim=0) for key in tokenized_batches[0].keys()}
-
-
 class DPRTrainer:
     def __init__(self, tokenizer, model, training_data, validation_queries, validation_corpus, qrels, device):
         self.tokenizer = tokenizer
@@ -81,12 +77,11 @@ class DPRTrainer:
                 neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
                 ).to(self.device)
-                combined_enc = concat_tokenized(qry_enc, pos_enc, neg_enc)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
                     optimizer.zero_grad()
-                    combined_emb = self.model(combined_enc)
-                    batch_size = qry_enc["input_ids"].shape[0]
-                    qry_emb, pos_emb, neg_emb = torch.split(combined_emb, batch_size, dim=0)
+                    qry_emb = self.model(qry_enc)
+                    pos_emb = self.model(pos_enc)
+                    neg_emb = self.model(neg_enc)
                     loss = self.loss_func(qry_emb, pos_emb, neg_emb)
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
@@ -157,12 +152,11 @@ class BayesianDPRTrainer(DPRTrainer):
                 neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
                 ).to(self.device)
-                combined_enc = concat_tokenized(qry_enc, pos_enc, neg_enc)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
                     optimizer.zero_grad()
-                    combined_emb = self.model(combined_enc)
-                    batch_size = qry_enc["input_ids"].shape[0]
-                    qry_emb, pos_emb, neg_emb = torch.split(combined_emb, batch_size, dim=0)
+                    qry_emb = self.model(qry_enc)
+                    pos_emb = self.model(pos_enc, use_cached_sample=True)
+                    neg_emb = self.model(neg_enc, use_cached_sample=True)
                     loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
                     loss_kld = self.model.kl() / len(self.training_data.dataset)
                     loss = loss_ce + loss_kld

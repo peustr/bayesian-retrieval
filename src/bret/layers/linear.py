@@ -10,7 +10,6 @@ class BayesianLinear(nn.Module):
     def __init__(self, prior, prior_scale=0.01):
         super().__init__()
         self.prior = Normal(prior.weight.data.detach().clone(), prior_scale)
-        self.posterior = None  # Populated in .forward()
         self.weight_mean = prior.weight
         self.weight_logvar = nn.Parameter(-np.log(2**16) + 0.5 * torch.randn_like(self.weight_mean))
         self.bias = prior.bias
@@ -23,9 +22,14 @@ class BayesianLinear(nn.Module):
         return self.weight_logvar.exp()
 
     def kl(self):
-        return kl_divergence(self.posterior, self.prior).sum()
+        if hasattr(self, "posterior"):
+            return kl_divergence(self.posterior, self.prior).sum()
+        raise AttributeError("Posterior not set. kl() needs to be called after a forward pass.")
 
-    def forward(self, x):
+    def forward(self, x, use_cached_sample=False):
+        if use_cached_sample and hasattr(self, "_cached_W"):
+            W = self._cached_W
         self.posterior = Normal(self.weight_mean, self.weight_var.sqrt())
         W = self.posterior.rsample()
+        self._cached_W = W
         return F.linear(x, W, self.bias)

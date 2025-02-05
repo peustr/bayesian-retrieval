@@ -7,32 +7,32 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-def _ensure_numpy(rep):
-    if isinstance(rep, torch.Tensor):
-        return rep.detach().cpu().numpy()
-    return rep
+def _ensure_numpy(emb):
+    if isinstance(emb, torch.Tensor):
+        return emb.detach().cpu().numpy()
+    return emb
 
 
 class FaissIndex:
-    def __init__(self, rep_dim):
-        index = faiss.IndexFlatIP(rep_dim)
+    def __init__(self, emb_dim):
+        index = faiss.IndexFlatIP(emb_dim)
         self.index = index
 
-    def add(self, psg_reps):
-        psg_reps = _ensure_numpy(psg_reps)
-        self.index.add(psg_reps)
+    def add(self, psg_emb):
+        psg_emb = _ensure_numpy(psg_emb)
+        self.index.add(psg_emb)
 
-    def search(self, qry_rep, k):
-        qry_rep = _ensure_numpy(qry_rep)
-        return self.index.search(qry_rep, k)
+    def search(self, qry_emb, k):
+        qry_emb = _ensure_numpy(qry_emb)
+        return self.index.search(qry_emb, k)
 
-    def batch_search(self, qry_reps, k, batch_size):
-        qry_reps = _ensure_numpy(qry_reps)
-        num_queries = qry_reps.shape[0]
+    def batch_search(self, qry_emb, k, batch_size):
+        qry_emb = _ensure_numpy(qry_emb)
+        num_queries = qry_emb.shape[0]
         scores = []
         indices = []
         for i in range(0, num_queries, batch_size):
-            batch_scores, batch_indices = self.search(qry_reps[i : i + batch_size], k)
+            batch_scores, batch_indices = self.search(qry_emb[i : i + batch_size], k)
             scores.append(batch_scores)
             indices.append(batch_indices)
         scores = np.concatenate(scores, axis=0)
@@ -40,7 +40,7 @@ class FaissIndex:
         return scores, indices
 
     @classmethod
-    def build(cls, embeddings):
-        index = cls(embeddings.size(1))
-        index.add(embeddings)
+    def build(cls, embs):
+        index = cls(embs.size(1))
+        index.add(embs)
         return index

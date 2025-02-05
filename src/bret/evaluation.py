@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class Evaluator:
-    def __init__(self, tokenizer, model, method, device, index=None, metrics={"ndcg", "recip_rank"}):
+    def __init__(self, tokenizer, model, method, device, index=None, metrics=None):
+        if metrics is None:
+            metrics = {"ndcg", "recip_rank"}
         self.tokenizer = tokenizer
         self.model = model
         self.method = method
@@ -42,18 +44,19 @@ class Evaluator:
         return results
 
     def _generate_run(self, qry_data_loader, k=20, num_samples=None, max_qry_len=32):
+        if qry_data_loader.batch_size != 1:
+            raise ValueError("To generate a run, load the queries with a batch size of 1.")
         run = {}
         for qry_id, qry in qry_data_loader:
-            qry = self.tokenizer(
+            qry_enc = self.tokenizer(
                 qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
-            )
-            qry = qry.to(self.device)
+            ).to(self.device)
             if self.method == "bret":
-                qry_reps = self.model(qry, num_samples=num_samples)
-                qry_reps = encode_query_mean(qry_reps)
+                qry_emb = self.model(qry_enc, num_samples=num_samples)
+                qry_emb = encode_query_mean(qry_emb)
             else:
-                qry_reps = self.model(qry)
-            scores, indices = self.index.search(qry_reps, k)
+                qry_emb = self.model(qry_enc)
+            scores, indices = self.index.search(qry_emb, k)
             qid = str(qry_id[0])
             run[qid] = {}
             for score, psg_id in zip(scores[0], indices[0]):

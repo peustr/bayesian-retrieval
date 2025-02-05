@@ -3,15 +3,13 @@ import time
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LinearLR, SequentialLR
 
-from bret.encoding import encode_corpus, encode_passage_mean, encode_query_mean
+from bret.encoding import encode_corpus
 from bret.evaluation import Evaluator
 from bret.indexing import FaissIndex
 from bret.losses import BPRLoss
-from bret.relevance import dot_product_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -83,15 +81,16 @@ class DPRTrainer:
                 neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
                 ).to(self.device)
+                combined_enc = concat_tokenized(qry_enc, pos_enc, neg_enc)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
-                    qry_emb = self.model(qry_enc)
-                    pos_emb = self.model(pos_enc)
-                    neg_emb = self.model(neg_enc)
+                    optimizer.zero_grad()
+                    combined_emb = self.model(combined_enc)
+                    batch_size = qry_enc["input_ids"].shape[0]
+                    qry_emb, pos_emb, neg_emb = torch.split(combined_emb, batch_size, dim=0)
                     loss = self.loss_func(qry_emb, pos_emb, neg_emb)
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()
                 scheduler.step()
             metrics = self._compute_validation_metrics("dpr", k=k)
             ndcg_at_k = metrics["nDCG@" + str(k)]
@@ -158,11 +157,10 @@ class BayesianDPRTrainer(DPRTrainer):
                 neg_enc = self.tokenizer(
                     neg_psg, padding="max_length", truncation=True, max_length=max_psg_len, return_tensors="pt"
                 ).to(self.device)
-                # Instead of three separate forward passes, concatenate inputs.
                 combined_enc = concat_tokenized(qry_enc, pos_enc, neg_enc)
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
+                    optimizer.zero_grad()
                     combined_emb = self.model(combined_enc)
-                    # Split the combined embeddings into three parts.
                     batch_size = qry_enc["input_ids"].shape[0]
                     qry_emb, pos_emb, neg_emb = torch.split(combined_emb, batch_size, dim=0)
                     loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
@@ -171,7 +169,6 @@ class BayesianDPRTrainer(DPRTrainer):
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()
                 scheduler.step()
                 ce_losses.append(loss_ce.detach().cpu())
                 kld_losses.append(loss_kld.detach().cpu())

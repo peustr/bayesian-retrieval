@@ -17,11 +17,13 @@ class BayesianRetriever(Retriever):
         return sum_kld
 
     def forward(self, qry_or_psg, num_samples=None):
-        num_samples = num_samples or 1
-        reps = []
+        if num_samples is None or num_samples == 1:
+            return self._encode(qry_or_psg)
+        # Note: we sample multiple times during inference, so we do not care that the posterior is overwritten.
+        embs = []
         for _ in range(num_samples):
-            reps.append(self._encode(qry_or_psg))
-        return torch.stack(reps)
+            embs.append(self._encode(qry_or_psg))
+        return torch.stack(embs)
 
 
 class BayesianBERTRetriever(BayesianRetriever):

@@ -19,7 +19,7 @@ def _load_data(data_file):
 
 
 class GenericDataLoader:
-    """Original implementation in BEIR repository: https://github.com/beir-cellar/beir/blob/main/beir/datasets/data_loader.py"""
+    """Implementation adapted from: https://github.com/beir-cellar/beir/blob/main/beir/datasets/data_loader.py"""
 
     def __init__(
         self, data_dir, corpus_file="corpus.jsonl", query_file="queries.jsonl", qrels_dir="qrels", split="train"

@@ -6,8 +6,11 @@ import torch.nn as nn
 from bret.relevance import dot_product_similarity
 
 
-class BPRLoss(nn.Module):
-    """Original implementation in BEIR repository: https://github.com/beir-cellar/beir/blob/main/beir/losses/bpr_loss.py"""
+class BinaryPassageRetrievalLoss(nn.Module):
+    """
+    This loss function is defined in: https://aclanthology.org/2021.acl-short.123.pdf
+    Implementation adapted from: https://github.com/beir-cellar/beir/blob/main/beir/losses/bpr_loss.py
+    """
 
     def __init__(self, scale=1.0, similarity_fct=None, binary_ranking_loss_margin=2.0, hashnet_gamma=0.1):
         super().__init__()

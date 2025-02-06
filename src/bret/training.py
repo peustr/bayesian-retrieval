@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import LinearLR, SequentialLR
 from bret.encoding import encode_corpus
 from bret.evaluation import Evaluator
 from bret.indexing import FaissIndex
-from bret.losses import BPRLoss
+from bret.losses import BinaryPassageRetrievalLoss
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class DPRTrainer:
         self.validation_corpus = validation_corpus
         self.qrels = qrels
         self.device = device
-        self.loss_func = BPRLoss()
+        self.loss_func = BinaryPassageRetrievalLoss()
 
     def train(
         self,

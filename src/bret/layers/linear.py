@@ -16,6 +16,7 @@ class BayesianLinear(nn.Module):
         if self.bias is not None:
             # We don't have to sample/train the bias, as it's just an offset to the mean.
             self.bias.requires_grad = False
+        self._use_cached_posterior = False
 
     @property
     def weight_var(self):
@@ -26,11 +27,12 @@ class BayesianLinear(nn.Module):
             return kl_divergence(self.posterior, self.prior).sum()
         raise AttributeError("Posterior not set. kl() needs to be called after a forward pass.")
 
-    def forward(self, x, use_cached_sample=False):
-        if use_cached_sample and hasattr(self, "_cached_W"):
+    def forward(self, x):
+        if self._use_cached_posterior and hasattr(self, "_cached_W"):
             W = self._cached_W
         else:
             self.posterior = Normal(self.weight_mean, self.weight_var.sqrt())
             W = self.posterior.rsample()
             self._cached_W = W
+        self._use_cached_posterior = False  # Reset this, so it has to be called explicitly every time.
         return F.linear(x, W, self.bias)

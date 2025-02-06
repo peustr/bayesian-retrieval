@@ -155,8 +155,8 @@ class BayesianDPRTrainer(DPRTrainer):
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=True):
                     optimizer.zero_grad()
                     qry_emb = self.model(qry_enc)
-                    pos_emb = self.model(pos_enc, use_cached_sample=True)
-                    neg_emb = self.model(neg_enc, use_cached_sample=True)
+                    pos_emb = self.model(pos_enc, use_cached_posterior=True)
+                    neg_emb = self.model(neg_enc, use_cached_posterior=True)
                     loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
                     loss_kld = self.model.kl() / len(self.training_data.dataset)
                     loss = loss_ce + loss_kld

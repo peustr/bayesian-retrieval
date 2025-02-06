@@ -13,7 +13,8 @@ CUDA_VISIBLE_DEVICES=0 python src/bret/scripts/train_bret.py \
     --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
     --model_name bert-base \
-    --num_samples 1 \
+    --encoder_ckpt output/trained_encoders/bert-base-dpr.pt \
+    --num_samples 10 \
     --batch_size 16 \
     --num_epochs 4 \
     --lr 0.000005 \

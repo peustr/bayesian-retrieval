@@ -16,7 +16,14 @@ class BayesianRetriever(Retriever):
                 sum_kld += m.kl()
         return sum_kld
 
-    def forward(self, qry_or_psg, num_samples=None):
+    def _cache_posterior(self):
+        for _, m in self.backbone.named_modules():
+            if isinstance(m, BayesianLinear):
+                m._use_cached_posterior = True
+
+    def forward(self, qry_or_psg, num_samples=None, use_cached_posterior=False):
+        if use_cached_posterior:
+            self._cache_posterior()
         if num_samples is None or num_samples == 1:
             return self._encode(qry_or_psg)
         # Note: we sample multiple times during inference, so we do not care that the posterior is overwritten.

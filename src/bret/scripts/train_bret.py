@@ -47,6 +47,8 @@ def main():
         for k, v in sd.items():
             if k.endswith(".weight"):
                 sdnew[k.replace(".weight", ".weight_mean")] = v
+            elif k.endswith(".bias"):
+                sdnew[k.replace(".bias", ".bias_mean")] = v
             else:
                 sdnew[k] = v
         model.load_state_dict(sdnew, strict=False)

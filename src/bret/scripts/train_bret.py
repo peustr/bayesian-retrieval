@@ -15,6 +15,20 @@ from bret.utils import get_checkpoint_file_name, get_query_file, get_root_dir
 logger = logging.getLogger(__name__)
 
 
+def preprocess_key(old_key):
+    if "embeddings" in old_key:
+        return old_key
+    if "norm" in old_key.lower():
+        return old_key
+    if "pooler" in old_key:
+        return old_key
+    if old_key.endswith(".weight"):
+        return old_key.replace(".weight", ".weight_mean")
+    if old_key.endswith(".bias"):
+        return old_key.replace(".bias", ".bias_mean")
+    return old_key
+
+
 def main():
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s: %(message)s", datefmt="%Y/%m/%d %H:%M:%S", level=logging.INFO
@@ -42,15 +56,11 @@ def main():
     tokenizer, model = model_factory(args.model_name, args.method, device)
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
-        sd = torch.load(args.encoder_ckpt)
+        sd = torch.load(args.encoder_ckpt, map_location=device)
         sdnew = {}
-        for k, v in sd.items():
-            if k.endswith(".weight"):
-                sdnew[k.replace(".weight", ".weight_mean")] = v
-            elif k.endswith(".bias"):
-                sdnew[k.replace(".bias", ".bias_mean")] = v
-            else:
-                sdnew[k] = v
+        for old_key, v in sd.items():
+            k = preprocess_key(old_key)
+            sdnew[k] = v
         model.load_state_dict(sdnew, strict=False)
     model.train()
 

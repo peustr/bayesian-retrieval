@@ -39,6 +39,18 @@ class BayesianBERTRetriever(BayesianRetriever):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
         for i in range(len(backbone.encoder.layer)):
+            self.backbone.encoder.layer[i].attention.self.query = BayesianLinear(
+                self.backbone.encoder.layer[i].attention.self.query,
+            )
+            self.backbone.encoder.layer[i].attention.self.key = BayesianLinear(
+                self.backbone.encoder.layer[i].attention.self.key,
+            )
+            self.backbone.encoder.layer[i].attention.self.value = BayesianLinear(
+                self.backbone.encoder.layer[i].attention.self.value,
+            )
+            self.backbone.encoder.layer[i].attention.output.dense = BayesianLinear(
+                self.backbone.encoder.layer[i].attention.output.dense,
+            )
             self.backbone.encoder.layer[i].intermediate.dense = BayesianLinear(
                 self.backbone.encoder.layer[i].intermediate.dense,
             )
@@ -57,6 +69,18 @@ class BayesianDistilBERTRetriever(BayesianRetriever):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
         for i in range(len(backbone.transformer.layer)):
+            self.backbone.transformer.layer[i].attention.q_lin = BayesianLinear(
+                self.backbone.transformer.layer[i].attention.q_lin,
+            )
+            self.backbone.transformer.layer[i].attention.k_lin = BayesianLinear(
+                self.backbone.transformer.layer[i].attention.k_lin,
+            )
+            self.backbone.transformer.layer[i].attention.v_lin = BayesianLinear(
+                self.backbone.transformer.layer[i].attention.v_lin,
+            )
+            self.backbone.transformer.layer[i].attention.out_lin = BayesianLinear(
+                self.backbone.transformer.layer[i].attention.out_lin,
+            )
             self.backbone.transformer.layer[i].ffn.lin1 = BayesianLinear(
                 self.backbone.transformer.layer[i].ffn.lin1,
             )

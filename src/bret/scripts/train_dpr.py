@@ -42,7 +42,7 @@ def main():
     tokenizer, model = model_factory(args.model_name, args.method, device)
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
-        sd = torch.load(args.encoder_ckpt)
+        sd = torch.load(args.encoder_ckpt, map_location=device)
         model.load_state_dict(sd)
     model.train()
 

@@ -9,12 +9,13 @@ class BayesianRetriever(Retriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
 
-    def kl(self):
-        sum_kld = torch.tensor(0.0, device=self.device)
+    def kl(self, reduction="sum"):
+        assert reduction in ("sum", "mean")
+        sum_kl = torch.tensor(0.0, device=self.device)
         for _, m in self.backbone.named_modules():
             if isinstance(m, BayesianLinear):
-                sum_kld += m.kl()
-        return sum_kld
+                sum_kl += m.kl(reduction=reduction)
+        return sum_kl
 
     def _cache_posterior(self):
         for _, m in self.backbone.named_modules():

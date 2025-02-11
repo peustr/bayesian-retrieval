@@ -27,11 +27,20 @@ class BayesianRetriever(Retriever):
             self._cache_posterior()
         if num_samples is None or num_samples == 1:
             return self._encode(qry_or_psg)
-        # Note: we sample multiple times during inference, so we do not care that the posterior is overwritten.
+        # Note: We only sample multiple times during inference, so we do not care that the posteriors are overwritten after every forward pass.
         embs = []
         for _ in range(num_samples):
             embs.append(self._encode(qry_or_psg))
         return torch.stack(embs)
+
+    def compute_uncertainty(self, qry_or_psg, num_samples):
+        if num_samples is None or num_samples == 1:
+            raise ValueError("Need multiple samples to compute uncertainty.")
+        return self.compute_representation_uncertainty(self.forward(qry_or_psg, num_samples, False))
+
+    def compute_representation_uncertainty(self, embeddings):
+        # embeddings should be of shape (num_samples x batch_size x embedding_dim)
+        return embeddings.var(dim=0).sum(dim=1)
 
 
 class BayesianBERTRetriever(BayesianRetriever):

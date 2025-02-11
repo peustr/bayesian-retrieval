@@ -126,6 +126,7 @@ class BayesianDPRTrainer(DPRTrainer):
         ckpt_file_name=None,
         k=20,
         num_samples=10,
+        kld_weight=0.01,
         max_qry_len=32,
         max_psg_len=256,
     ):
@@ -159,7 +160,7 @@ class BayesianDPRTrainer(DPRTrainer):
                     neg_emb = self.model(neg_enc, use_cached_posterior=True)
                     loss_ce = self.loss_func(qry_emb, pos_emb, neg_emb)
                     loss_kld = self.model.kl() / len(self.training_data.dataset)
-                    loss = loss_ce + loss_kld
+                    loss = loss_ce + kld_weight * loss_kld
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()

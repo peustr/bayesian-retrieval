@@ -10,9 +10,14 @@ from torch.utils.data import DataLoader, Dataset
 logger = logging.getLogger(__name__)
 
 
-def _load_data(data_file):
+def _load_data(data_file, num_shards=None, shard_index=None):
     if data_file.endswith(".jsonl"):
-        data = HuggingFaceDataset.from_json(data_file)
+        if (num_shards is None) or (shard_index is None):
+            data = HuggingFaceDataset.from_json(data_file)
+        else:
+            data = HuggingFaceDataset.from_json(data_file).shard(
+                num_shards=num_shards, index=shard_index, contiguous=True
+            )
     else:
         raise NotImplementedError("Data file with format {} not supported.".format(data_file.split(".")[-1]))
     return data
@@ -100,8 +105,8 @@ class GenericDataLoader:
 
 
 class TextDataset(Dataset):
-    def __init__(self, data_file):
-        self.data = _load_data(data_file)
+    def __init__(self, data_file, num_shards=None, shard_index=None):
+        self.data = _load_data(data_file, num_shards=num_shards, shard_index=shard_index)
         self._num_samples = len(self.data)
 
     def __len__(self):
@@ -134,6 +139,6 @@ def get_training_dataloader(data_file, batch_size=32, shuffle=True):
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True, drop_last=True)
 
 
-def get_text_dataloader(data_file, batch_size=32, shuffle=False):
-    dataset = TextDataset(data_file)
+def get_text_dataloader(data_file, num_shards=None, shard_index=None, batch_size=32, shuffle=False):
+    dataset = TextDataset(data_file, num_shards=num_shards, shard_index=shard_index)
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, pin_memory=True, drop_last=False)

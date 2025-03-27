@@ -23,6 +23,8 @@ def main():
     parser.add_argument("--model_name", default="bert-base")
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
     parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
+    parser.add_argument("--num_shards", type=int, default=None)
+    parser.add_argument("--shard_index", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_samples", type=int, default=30)  # Only for variational inference.
     parser.add_argument("--max_qry_len", type=int, default=32)
@@ -41,9 +43,13 @@ def main():
     query_file = get_query_file(args.dataset_id, split=args.split)
     logger.info("Encoding the queries in: %s", query_file)
     t_start = time.time()
-    query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)
+    query_dl = get_text_dataloader(
+        query_file, num_shards=args.num_shards, shard_index=args.shard_index, batch_size=1, shuffle=False
+    )
     qry_embs = encode_queries(query_dl, tokenizer, model, device, args.method, args.num_samples, args.max_qry_len)
-    torch.save(qry_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, query_file))
+    torch.save(
+        qry_embs, get_embedding_file_name(args.output_dir, args.encoder_ckpt, query_file, shard_index=args.shard_index)
+    )
     t_end = time.time()
     logger.info("Encoding the queries finished in %.2f minutes.", (t_end - t_start) / 60)
 

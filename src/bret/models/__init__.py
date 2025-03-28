@@ -1,5 +1,5 @@
-from bret.models.bayesian import BayesianBERTRetriever, BayesianDistilBERTRetriever
 from bret.models.core import BERTRetriever, DistilBERTRetriever
+from bret.models.bayesian import BayesianBERTRetriever, BayesianDistilBERTRetriever
 from bret.models.mc_dropout import MCDropoutBERTRetriever, MCDropoutDistilBERTRetriever
 from bret.utils import get_hf_model_id
 

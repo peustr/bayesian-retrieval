@@ -38,7 +38,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco"])
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
-    parser.add_argument("--method", default="bret", choices=["dpr", "bret"])
+    parser.add_argument("--method", default="mcdropout", choices=["dpr", "bret", "mcdropout"])
     parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
@@ -64,7 +64,6 @@ def main():
             sdnew[k] = v
         model.load_state_dict(sdnew, strict=False)
     model.train()
-
     train_dl = get_training_dataloader(args.training_data_file, batch_size=args.batch_size, shuffle=True)
     query_file = get_query_file(args.dataset_id, split="val")
     val_query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)

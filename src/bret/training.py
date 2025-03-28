@@ -185,3 +185,6 @@ class MCDropoutDPRTrainer(DPRTrainer):
             loss_reg = reg_term.squeeze()
             loss = loss_ce + loss_reg
             return {"loss": loss, "loss_ce": loss_ce, "loss_reg": loss_reg}
+
+    def compute_validation_metrics(self, k, **kwargs):
+        return self._compute_validation_metrics("mcdropout", k=k, num_samples=kwargs["num_samples"])

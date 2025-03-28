@@ -5,9 +5,11 @@ from torch import nn
 
 import numpy as np
 
-from bret.models.core import Retriever
+from bret.models import BERTRetriever
+from bret.models.core import Retriever, DistilBERTRetriever
 from bret.utils.model_utils import get_transformer_hidden_dim, disable_grad
 
+logger = logging.getLogger(__name__)
 
 class ConcreteDropout(nn.Module):
     """
@@ -117,6 +119,7 @@ class MCDropoutRetriever(Retriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
         self.hidden_dim = get_transformer_hidden_dim(backbone)
+        logger.info(f"hidden_dim: {self.hidden_dim}")
         self.stoch_projection_1 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True)
         self.stoch_projection_2 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True)
         w, d = 1e-6, 1e-3
@@ -135,18 +138,18 @@ class MCDropoutRetriever(Retriever):
         out_reps = torch.stack(out_reps)
         # convert to batch_size * n_iters * 2
         out_reps.swapaxes_(0, 1)
+
         return out_reps
 
     def forward(self, qry_or_psg, num_samples=None):
-        if num_samples is None or num_samples == 1:
-            return self._encode(qry_or_psg)
+        num_samples = num_samples or 1
 
+        reps = self._mc_sample(self._encode(qry_or_psg), n_iters=num_samples)
         self.regularization = self.cd1.regularisation + self.cd2.regularisation
-        logging.warning("implement regularisation!!!!!!!!!!")
-        reps = self._mc_sample(self._encode(qry_or_psg),
-                               n_iters=num_samples)
 
-        return torch.stack(reps)
+        if num_samples == 1:
+            return reps.squeeze()
+        return reps
 
     def compute_uncertainty(self, qry_or_psg, num_samples):
         if num_samples is None or num_samples == 1:
@@ -158,13 +161,13 @@ class MCDropoutRetriever(Retriever):
         return embeddings.var(dim=0).sum(dim=1)
 
 
-class MCDropoutDistilBERTRetriever(MCDropoutRetriever):
+class MCDropoutDistilBERTRetriever(BERTRetriever, MCDropoutRetriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
 
 
-class MCDropoutBERTRetriever(MCDropoutRetriever):
+class MCDropoutBERTRetriever(DistilBERTRetriever, MCDropoutRetriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)

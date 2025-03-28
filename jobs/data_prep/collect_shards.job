@@ -1,0 +1,15 @@
+#!/bin/sh
+#SBATCH -o ./output/logs/%A.out
+#SBATCH -e ./output/logs/%A.err
+#SBATCH --partition=cpu
+#SBATCH --time=2:00:00
+# Set-up the environment.
+source ${HOME}/.bashrc
+# Activate env.
+conda activate bret
+
+python src/bret/scripts/collect_shards.py \
+    --dataset_id msmarco \
+    --encoder_ckpt output/trained_encoders/bert-base-dpr.pt \
+    --num_shards 5 \
+    --embeddings_dir output/embeddings

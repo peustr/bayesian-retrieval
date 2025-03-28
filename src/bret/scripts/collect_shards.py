@@ -16,7 +16,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco", "nq"])
     parser.add_argument("--encoder_ckpt", default="output/trained_encoders/bert-base.pt")
     parser.add_argument("--num_shards", type=int, default=20)
-    parser.add_argument("--output_dir", default="output/embeddings")
+    parser.add_argument("--embeddings_dir", default="output/embeddings")
     args = parser.parse_args()
     logger.info(args.__dict__)
 

@@ -11,6 +11,7 @@ from bret.utils.model_utils import get_transformer_hidden_dim, disable_grad
 
 logger = logging.getLogger(__name__)
 
+
 class ConcreteDropout(nn.Module):
     """
     Source: https://github.com/dscohen/LastLayersBayesianIR/blob/main/models/layers/concete_dropout.py#L8
@@ -120,11 +121,11 @@ class MCDropoutRetriever(Retriever):
         super().__init__(backbone, device)
         self.hidden_dim = get_transformer_hidden_dim(backbone)
         logger.info(f"hidden_dim: {self.hidden_dim}")
-        self.stoch_projection_1 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True)
-        self.stoch_projection_2 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True)
+        self.stoch_projection_1 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True).to(device)
+        self.stoch_projection_2 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True).to(device)
         w, d = 1e-6, 1e-3
-        self.cd1 = ConcreteDropout(weight_regulariser=w, dropout_regulariser=d)
-        self.cd2 = ConcreteDropout(weight_regulariser=w, dropout_regulariser=d)
+        self.cd1 = ConcreteDropout(weight_regulariser=w, dropout_regulariser=d).to(device)
+        self.cd2 = ConcreteDropout(weight_regulariser=w, dropout_regulariser=d).to(device)
         self.regularization = None
 
     def _mc_sample(self, embeds, n_iters):

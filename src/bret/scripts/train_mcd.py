@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from pathlib import Path
 
 import torch
 
@@ -75,7 +76,7 @@ def main():
     ckpt_file_name = args.ckpt_file_name or get_checkpoint_file_name(args.output_dir, args.model_name,
                                                                      method=args.method)
     trainer = MCDropoutDPRTrainer(tokenizer, model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
-    os.makedirs(os.path.split(ckpt_file_name)[0], exist_ok=True)
+    Path(ckpt_file_name).parent.mkdir(parents=True, exist_ok=True)
     trainer.train(
         num_epochs=args.num_epochs,
         lr=args.lr,

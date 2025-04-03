@@ -35,6 +35,7 @@ def main():
     parser.add_argument("--max_qry_len", type=int, default=32)
     parser.add_argument("--max_psg_len", type=int, default=256)
     parser.add_argument("--output_dir", default="output/trained_encoders")
+    parser.add_argument("--ckpt_file_name", default=None)
     args = parser.parse_args()
     logger.info(args.__dict__)
 
@@ -54,9 +55,10 @@ def main():
     val_corpus_dl = get_text_dataloader(corpus_file, batch_size=args.batch_size, shuffle=False)
     dataset_dir = get_root_dir(args.dataset_id)
     qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
-    ckpt_file_name = get_checkpoint_file_name(args.output_dir, args.model_name, method=args.method)
+    ckpt_file_name = args.ckpt_file_name or get_checkpoint_file_name(args.output_dir, args.model_name,
+                                                                     method=args.method)
     trainer = DPRTrainer(tokenizer, model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(os.path.split(ckpt_file_name)[0], exist_ok=True)
     trainer.train(
         num_epochs=args.num_epochs,
         lr=args.lr,

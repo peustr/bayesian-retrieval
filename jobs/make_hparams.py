@@ -58,7 +58,7 @@ if __name__ == '__main__':
         "model_name": ["bert-base", "distilbert-base"]
     }
 
-    make_params("jobs/hyperparams/dpr.params", dpr_params, "dpr-{model_name}_{lr}.pt")
+    make_params("jobs/hyperparams/dpr.params", dpr_params, "output/hs/dpr-{model_name}_{lr}.pt")
 
     # BRET params
     bret_params = {
@@ -66,7 +66,7 @@ if __name__ == '__main__':
         "model_name": ["bert-base", "distilbert-base"]
     }
 
-    make_params("jobs/hyperparams/bret.params", bret_params, "bret-{model_name}_{lr}.pt")
+    make_params("jobs/hyperparams/bret.params", bret_params, "output/hs/bret-{model_name}_{lr}.pt")
 
     # MC-Dropout params
     mcd_params = {
@@ -74,4 +74,4 @@ if __name__ == '__main__':
         "model_name": ["bert-base", "distilbert-base"]
     }
 
-    make_params("jobs/hyperparams/mcdropout.params", mcd_params, "mcdrop-{model_name}_{lr}.pt")
+    make_params("jobs/hyperparams/mcdropout.params", mcd_params, "output/hs/mcdrop-{model_name}_{lr}.pt")

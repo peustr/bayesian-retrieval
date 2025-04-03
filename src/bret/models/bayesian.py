@@ -2,7 +2,7 @@ import torch
 
 from bret.layers.linear import BayesianLinear
 from bret.models import BERTRetriever
-from bret.models.core import Retriever, DistilBERTRetriever
+from bret.models.core import DistilBERTRetriever, Retriever
 from bret.utils import disable_grad
 
 

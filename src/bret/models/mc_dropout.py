@@ -1,13 +1,12 @@
 import logging
 
+import numpy as np
 import torch
 from torch import nn
 
-import numpy as np
-
 from bret.models import BERTRetriever
-from bret.models.core import Retriever, DistilBERTRetriever
-from bret.utils.model_utils import get_transformer_hidden_dim, disable_grad
+from bret.models.core import DistilBERTRetriever, Retriever
+from bret.utils.model_utils import disable_grad, get_transformer_hidden_dim
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +19,9 @@ class ConcreteDropout(nn.Module):
     'Concrete Dropout' paper: https://arxiv.org/pdf/1705.07832
     """
 
-    def __init__(self,
-                 weight_regulariser: float,
-                 dropout_regulariser: float,
-                 init_min: float = 0.1,
-                 init_max: float = 0.1) -> None:
+    def __init__(
+        self, weight_regulariser: float, dropout_regulariser: float, init_min: float = 0.1, init_max: float = 0.1
+    ) -> None:
         """Concrete Dropout.
         Parameters
         ----------
@@ -101,10 +98,12 @@ class ConcreteDropout(nn.Module):
         self.p = torch.sigmoid(self.p_logit)
         u_noise = torch.rand_like(x)
 
-        drop_prob = (torch.log(self.p + eps) -
-                     torch.log(1 - self.p + eps) +
-                     torch.log(u_noise + eps) -
-                     torch.log(1 - u_noise + eps))
+        drop_prob = (
+            torch.log(self.p + eps)
+            - torch.log(1 - self.p + eps)
+            + torch.log(u_noise + eps)
+            - torch.log(1 - u_noise + eps)
+        )
 
         drop_prob = torch.sigmoid(drop_prob / tmp)
 

@@ -71,18 +71,18 @@ class DPRTrainer:
         return self._compute_validation_metrics("dpr", k=k)
 
     def train(
-            self,
-            num_epochs=4,
-            lr=5e-6,
-            min_lr=5e-8,
-            warmup_rate=0.1,
-            ckpt_file_name=None,
-            k=20,
-            max_qry_len=32,
-            max_psg_len=256,
-            log_frequency=1,
-            loss_kwargs=None,
-            **kwargs,
+        self,
+        num_epochs=4,
+        lr=5e-6,
+        min_lr=5e-8,
+        warmup_rate=0.1,
+        ckpt_file_name=None,
+        k=20,
+        max_qry_len=32,
+        max_psg_len=256,
+        log_frequency=1,
+        loss_kwargs=None,
+        **kwargs,
     ):
         optimizer, scheduler = make_lr_scheduler_with_warmup(
             self.model, self.training_data, lr, min_lr, num_epochs, warmup_rate
@@ -100,16 +100,12 @@ class DPRTrainer:
             self.model.train()
             losses = defaultdict(list)
             for batch_num, (qry, pos_psg, neg_psg) in enumerate(self.training_data):
-                qry_enc, pos_enc, neg_enc = self.prepare_inputs(qry=qry,
-                                                                pos_psg=pos_psg,
-                                                                neg_psg=neg_psg,
-                                                                max_qry_len=max_qry_len,
-                                                                max_psg_len=max_psg_len)
-                loss_terms = self.compute_loss(optimizer,
-                                               qry_enc=qry_enc,
-                                               pos_enc=pos_enc,
-                                               neg_enc=neg_enc,
-                                               **loss_kwargs)
+                qry_enc, pos_enc, neg_enc = self.prepare_inputs(
+                    qry=qry, pos_psg=pos_psg, neg_psg=neg_psg, max_qry_len=max_qry_len, max_psg_len=max_psg_len
+                )
+                loss_terms = self.compute_loss(
+                    optimizer, qry_enc=qry_enc, pos_enc=pos_enc, neg_enc=neg_enc, **loss_kwargs
+                )
                 loss = loss_terms["loss"]
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)

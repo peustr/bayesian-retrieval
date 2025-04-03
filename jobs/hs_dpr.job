@@ -1,6 +1,6 @@
 #!/bin/sh
-#SBATCH -o ./output/logs/%A.out
-#SBATCH -e ./output/logs/%A.err
+#SBATCH -o ./output/logs/%A_%a.out
+#SBATCH -e ./output/logs/%A_%a.err
 #SBATCH --partition=gpu_a100
 #SBATCH --mem=120G
 #SBATCH -c12

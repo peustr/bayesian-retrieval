@@ -80,7 +80,7 @@ class DPRTrainer:
         k=20,
         max_qry_len=32,
         max_psg_len=256,
-        log_frequency=1,
+        log_frequency=1000,
         loss_kwargs=None,
         **kwargs,
     ):

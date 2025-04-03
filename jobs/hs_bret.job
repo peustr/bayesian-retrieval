@@ -18,12 +18,13 @@ echo "SLURM_JOB_ID"=$SLURM_JOB_ID
 echo "SLURM_JOB_NAME"=$SLURM_JOB_NAME
 echo $SLURM_SUBMIT_DIR
 
-HPARAMS_FILE=jobs/hyperparams/dpr.params
+HPARAMS_FILE=jobs/hyperparams/bret.params
 
-CUDA_VISIBLE_DEVICES=0 python -m src.bret.scripts.train_dpr \
+CUDA_VISIBLE_DEVICES=0 python -m src.bret.scripts.train_bret \
     --dataset_id msmarco \
     --training_data_file data/msmarco-train.jsonl \
-    --num_samples 1 \
+    --num_samples 10 \
+    --kld_weight 0.01 \
     --batch_size 16 \
     --num_epochs 4 \
     --min_lr 1e-8 \

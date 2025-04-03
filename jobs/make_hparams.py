@@ -58,6 +58,20 @@ if __name__ == '__main__':
         "model_name": ["bert-base", "distilbert-base"]
     }
 
-    dpr_chkpt_format = "dpr-{model_name}_{lr}.pt"
+    make_params("jobs/hyperparams/dpr.params", dpr_params, "dpr-{model_name}_{lr}.pt")
 
-    make_params("jobs/hyperparams/dpr.params", dpr_params, dpr_chkpt_format)
+    # BRET params
+    bret_params = {
+        "lr": [1e-3, 1e-4, 1e-5, 1e-6],
+        "model_name": ["bert-base", "distilbert-base"]
+    }
+
+    make_params("jobs/hyperparams/bret.params", bret_params, "bret-{model_name}_{lr}.pt")
+
+    # MC-Dropout params
+    mcd_params = {
+        "lr": [1e-3, 1e-4, 1e-5, 1e-6],
+        "model_name": ["bert-base", "distilbert-base"]
+    }
+
+    make_params("jobs/hyperparams/mcdropout.params", mcd_params, "mcdrop-{model_name}_{lr}.pt")

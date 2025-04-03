@@ -55,7 +55,7 @@ if __name__ == '__main__':
     # DPR
     dpr_params = {
         "lr": [1e-3, 1e-4, 1e-5, 1e-6],
-        "model_name": ["bert_base", "distilbert-base-uncased"]
+        "model_name": ["bert-base", "distilbert-base"]
     }
 
     dpr_chkpt_format = "dpr-{model_name}_{lr}.pt"

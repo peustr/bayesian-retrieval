@@ -51,7 +51,7 @@ class Evaluator:
                 qry_enc = self.tokenizer(
                     qry, padding="max_length", truncation=True, max_length=max_qry_len, return_tensors="pt"
                 ).to(self.device)
-                if self.method == "bret":
+                if self.method in {"bret", "mcdropout"}:
                     qry_emb = self.model(qry_enc, num_samples=num_samples)
                     qry_emb = encode_query_mean(qry_emb)
                 else:

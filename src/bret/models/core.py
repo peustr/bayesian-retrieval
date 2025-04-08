@@ -34,7 +34,6 @@ class Retriever(nn.Module):
 class BERTRetriever(Retriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
-        disable_grad(self.backbone.embeddings)
 
     def cls_pooling(self, model_output, attention_mask):
         token_embeddings = model_output.last_hidden_state
@@ -45,7 +44,6 @@ class BERTRetriever(Retriever):
 class DistilBERTRetriever(Retriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
-        disable_grad(self.backbone.embeddings)
 
     def cls_pooling(self, model_output, *args):
         return model_output.last_hidden_state[:, 0]

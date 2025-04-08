@@ -1,0 +1,33 @@
+#!/bin/sh
+#SBATCH -o ./output/logs/%A_%a.out
+#SBATCH -e ./output/logs/%A_%a.err
+#SBATCH --partition=gpu_a100
+#SBATCH --mem=120G
+#SBATCH -c12
+#SBATCH --time=72:00:00
+#SBATCH --array=1-8%8
+#SBATCH --gres=gpu:1
+
+# Set-up the environment.
+source ${HOME}/.bashrc
+# Activate env.
+conda activate bret
+
+echo "SLURM_SUBMIT_DIR="$SLURM_SUBMIT_DIR
+echo "SLURM_JOB_ID"=$SLURM_JOB_ID
+echo "SLURM_JOB_NAME"=$SLURM_JOB_NAME
+echo $SLURM_SUBMIT_DIR
+
+HPARAMS_FILE=jobs/hyperparams/bret.params
+
+CUDA_VISIBLE_DEVICES=0 python -m src.bret.scripts.train_bret \
+    --dataset_id msmarco \
+    --training_data_file data/msmarco-train.jsonl \
+    --num_samples 10 \
+    --kld_weight 0.01 \
+    --batch_size 16 \
+    --num_epochs 4 \
+    --min_lr 1e-8 \
+    --warmup_rate 0.1 \
+    --max_qry_len 32 \
+    --max_psg_len 256 $(head -$SLURM_ARRAY_TASK_ID $HPARAMS_FILE | tail -1)

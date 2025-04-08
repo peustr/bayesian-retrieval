@@ -1,7 +1,8 @@
 import torch
 
 from bret.layers.linear import BayesianLinear
-from bret.models.core import Retriever
+from bret.models.core import DistilBERTRetriever, Retriever
+from bret.models import BERTRetriever
 from bret.utils import disable_grad
 
 
@@ -43,7 +44,7 @@ class BayesianRetriever(Retriever):
         return embeddings.var(dim=0).sum(dim=1)
 
 
-class BayesianBERTRetriever(BayesianRetriever):
+class BayesianBERTRetriever(BayesianRetriever, BERTRetriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
@@ -67,13 +68,8 @@ class BayesianBERTRetriever(BayesianRetriever):
                 self.backbone.encoder.layer[i].output.dense,
             )
 
-    def cls_pooling(self, model_output, attention_mask):
-        token_embeddings = model_output.last_hidden_state
-        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
-
-class BayesianDistilBERTRetriever(BayesianRetriever):
+class BayesianDistilBERTRetriever(BayesianRetriever, DistilBERTRetriever):
     def __init__(self, backbone, device="cpu"):
         super().__init__(backbone, device)
         disable_grad(self.backbone.embeddings)
@@ -96,6 +92,3 @@ class BayesianDistilBERTRetriever(BayesianRetriever):
             self.backbone.transformer.layer[i].ffn.lin2 = BayesianLinear(
                 self.backbone.transformer.layer[i].ffn.lin2,
             )
-
-    def cls_pooling(self, model_output, *args):
-        return model_output.last_hidden_state[:, 0]

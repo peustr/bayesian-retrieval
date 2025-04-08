@@ -11,10 +11,24 @@ from bret.data_loaders import (
     get_training_dataloader,
 )
 from bret.models import model_factory
-from bret.training import DPRTrainer
+from bret.training import BayesianDPRTrainer, MCDropoutDPRTrainer
 from bret.utils import get_checkpoint_file_name, get_query_file, get_root_dir
 
 logger = logging.getLogger(__name__)
+
+
+def preprocess_key(old_key):
+    if "embeddings" in old_key:
+        return old_key
+    if "norm" in old_key.lower():
+        return old_key
+    if "pooler" in old_key:
+        return old_key
+    if old_key.endswith(".weight"):
+        return old_key.replace(".weight", ".weight_mean")
+    if old_key.endswith(".bias"):
+        return old_key.replace(".bias", ".bias_mean")
+    return old_key
 
 
 def main():
@@ -25,7 +39,7 @@ def main():
     parser.add_argument("--dataset_id", choices=["msmarco"])
     parser.add_argument("--training_data_file", default="data/msmarco-train.jsonl")
     parser.add_argument("--model_name", default="bert-base")
-    parser.add_argument("--method", default="dpr", choices=["dpr", "bret"])
+    parser.add_argument("--method", default="mcdropout", choices=["dpr", "bret", "mcdropout"])
     parser.add_argument("--num_samples", type=int, default=10)
     parser.add_argument("--encoder_ckpt", default=None)  # If provided, training is resumed from checkpoint.
     parser.add_argument("--batch_size", type=int, default=16)
@@ -46,9 +60,12 @@ def main():
     if args.encoder_ckpt is not None:
         logger.info("Loading pre-trained encoder weights from checkpoint: %s", args.encoder_ckpt)
         sd = torch.load(args.encoder_ckpt, map_location=device)
-        model.load_state_dict(sd)
+        sdnew = {}
+        for old_key, v in sd.items():
+            k = preprocess_key(old_key)
+            sdnew[k] = v
+        model.load_state_dict(sdnew, strict=False)
     model.train()
-
     train_dl = get_training_dataloader(args.training_data_file, batch_size=args.batch_size, shuffle=True)
     query_file = get_query_file(args.dataset_id, split="val")
     val_query_dl = get_text_dataloader(query_file, batch_size=1, shuffle=False)
@@ -58,7 +75,7 @@ def main():
     qrels = GenericDataLoader(dataset_dir, split="val").load_qrels()
     ckpt_file_name = args.ckpt_file_name or get_checkpoint_file_name(args.output_dir, args.model_name,
                                                                      method=args.method)
-    trainer = DPRTrainer(tokenizer, model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
+    trainer = MCDropoutDPRTrainer(tokenizer, model, train_dl, val_query_dl, val_corpus_dl, qrels, device)
     Path(ckpt_file_name).parent.mkdir(parents=True, exist_ok=True)
     trainer.train(
         num_epochs=args.num_epochs,

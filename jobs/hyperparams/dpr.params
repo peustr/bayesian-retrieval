@@ -1,0 +1,8 @@
+ --lr 0.001 --model_name bert-base --ckpt_file_name output/hs/dpr-bert-base_0.001.pt 
+ --lr 0.001 --model_name distilbert-base --ckpt_file_name output/hs/dpr-distilbert-base_0.001.pt 
+ --lr 0.0001 --model_name bert-base --ckpt_file_name output/hs/dpr-bert-base_0.0001.pt 
+ --lr 0.0001 --model_name distilbert-base --ckpt_file_name output/hs/dpr-distilbert-base_0.0001.pt 
+ --lr 1e-05 --model_name bert-base --ckpt_file_name output/hs/dpr-bert-base_1e-05.pt 
+ --lr 1e-05 --model_name distilbert-base --ckpt_file_name output/hs/dpr-distilbert-base_1e-05.pt 
+ --lr 1e-06 --model_name bert-base --ckpt_file_name output/hs/dpr-bert-base_1e-06.pt 
+ --lr 1e-06 --model_name distilbert-base --ckpt_file_name output/hs/dpr-distilbert-base_1e-06.pt 

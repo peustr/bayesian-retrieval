@@ -44,17 +44,27 @@ unzip msmarco.zip
 wget https://sbert.net/datasets/msmarco-hard-negatives.jsonl.gz
 ```
 
-## How to train a DPR model
-
 After having downloaded MS-MARCO along with the hard negatives, run:
 ```
-python scripts/prepare_msmarco_training_data.py
+python src/bret/scripts/prepare_msmarco_training_data.py
 ```
 which will generate `./data/msmarco-train.jsonl`. One should also prepare the corpus file. Run:
 ```
 python src/bret/scripts/prepare_corpus_file.py --dataset_id msmarco --split dev
 ```
 to generate `./data/msmarco-corpus.jsonl`.
+
+TODO : Add code for the validation set
+
+
+*Optional* Create a small-subset of msmarco for testing your code
+```
+python src/bret/scripts/prepare_subset.py --corpus_size 1000 --size 10
+```
+ 
+
+## How to train a DPR model
+
 Then, running a command like
 ```
 python src/bret/scripts/train_dpr.py \
